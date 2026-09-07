@@ -71,7 +71,7 @@ Target URLs, authentication details, user identities, object identifiers, and te
                v
     +----------------------+
     | Reporting Layer      |
-    | JSON / Markdown      |
+    | JSON / Markdown / HTML |
     +----------------------+
 ```
 
@@ -260,7 +260,15 @@ python -m scanner.main \
   --report-format markdown
 ```
 
-### Generate Both Formats
+### Generate HTML Report
+
+```bash
+python -m scanner.main \
+  --config config/vulnerable.yaml \
+  --report-format html
+```
+
+### Generate All Report Formats
 
 ```bash
 python -m scanner.main \
@@ -358,7 +366,7 @@ If an ordinary user can modify a protected property such as `role`, the scanner 
 
 ## Reporting
 
-AuthZ Scanner supports two report formats.
+AuthZ Scanner supports three report formats.
 
 ### JSON
 
@@ -375,7 +383,11 @@ Possible future uses include:
 
 Designed as a human-readable penetration testing report.
 
-The Markdown report includes:
+### HTML
+
+Designed as a browser-readable report for demos and easier review.
+
+The Markdown and HTML reports include:
 
 - Executive Summary
 - Scan Metadata
@@ -445,6 +457,7 @@ Convenience files are also generated:
 ```text
 reports/latest.json
 reports/latest.md
+reports/latest.html
 ```
 
 These provide quick access to the most recent scan results.
@@ -522,6 +535,7 @@ The test suite covers:
 - Property authorization scanner
 - JSON reporting
 - Markdown reporting
+- HTML reporting
 - CLI error handling
 - Comparative scanning
 - Demo database reset behavior
@@ -641,7 +655,6 @@ Planned improvements include:
 
 - OpenAPI-based configuration discovery
 - Automatic generation of starter scanner configuration from `/openapi.json`
-- HTML security reports
 - Configurable severity levels
 - Docker support for the scanner and demo APIs
 - Improved CI/CD security integration

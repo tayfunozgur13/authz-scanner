@@ -15,6 +15,7 @@ from scanner.core.identity import AuthenticatedIdentity, IdentityLoginError, log
 from scanner.modules.bfla import run_bfla_tests
 from scanner.modules.bola import run_bola_tests
 from scanner.modules.property_auth import run_property_auth_tests
+from scanner.reporting.html_report import write_html_report
 from scanner.reporting.json_report import write_json_report
 from scanner.reporting.manifest import update_report_manifest
 from scanner.reporting.markdown_report import write_markdown_report
@@ -172,6 +173,8 @@ def write_reports(result: ScannerRunResult, report_format: str, report_dir: Path
         report_paths.append(write_json_report(result, report_dir, generated_at=generated_at))
     if report_format in {"markdown", "all"}:
         report_paths.append(write_markdown_report(result, report_dir, generated_at=generated_at))
+    if report_format in {"html", "all"}:
+        report_paths.append(write_html_report(result, report_dir, generated_at=generated_at))
     if report_paths:
         update_report_manifest(result, report_paths, report_dir, generated_at=generated_at)
     return report_paths
@@ -215,7 +218,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--report-format",
-        choices=["none", "json", "markdown", "all"],
+        choices=["none", "json", "markdown", "html", "all"],
         default="none",
         help="Optional report output format.",
     )

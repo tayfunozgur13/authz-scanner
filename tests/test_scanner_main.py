@@ -131,7 +131,7 @@ def test_run_scan_logs_in_identities_checks_api_and_runs_bola(monkeypatch) -> No
     assert result.finding_count == 0
 
 
-def test_write_reports_writes_json_and_markdown_when_format_is_all(tmp_path) -> None:
+def test_write_reports_writes_json_markdown_and_html_when_format_is_all(tmp_path) -> None:
     scanner_result = ScannerRunResult(
         target_name="external-api",
         base_url="http://testserver",
@@ -151,11 +151,12 @@ def test_write_reports_writes_json_and_markdown_when_format_is_all(tmp_path) -> 
 
     report_paths = write_reports(scanner_result, "all", tmp_path)
 
-    assert len(report_paths) == 2
-    assert {path.suffix for path in report_paths} == {".json", ".md"}
+    assert len(report_paths) == 3
+    assert {path.suffix for path in report_paths} == {".json", ".md", ".html"}
     assert (tmp_path / "manifest.json").exists()
     assert (tmp_path / "latest.json").exists()
     assert (tmp_path / "latest.md").exists()
+    assert (tmp_path / "latest.html").exists()
 
 
 def test_load_scanner_config_reports_missing_file_as_cli_error(tmp_path) -> None:

@@ -34,6 +34,7 @@ def update_latest_report(report_path: Path, output_dir: Path) -> Path | None:
     latest_names = {
         "json": "latest.json",
         "markdown": "latest.md",
+        "html": "latest.html",
     }
     latest_name = latest_names.get(report_format)
     if latest_name is None:
