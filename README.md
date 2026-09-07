@@ -88,6 +88,7 @@ authz-scanner/
 │
 ├── scanner/
 │   ├── core/
+│   ├── discovery/
 │   ├── modules/
 │   ├── reporting/
 │   └── main.py
@@ -95,6 +96,7 @@ authz-scanner/
 ├── config/
 │   ├── vulnerable.yaml
 │   ├── hardened.yaml
+│   ├── generated-from-openapi.yaml
 │   └── example_external.yaml
 │
 ├── docs/
@@ -130,6 +132,10 @@ Contains individual authorization testing modules such as:
 - BOLA scanner
 - BFLA scanner
 - property authorization scanner
+
+#### `scanner/discovery/`
+
+Contains helpers for creating reviewable starter scanner configuration from OpenAPI documents.
 
 #### `scanner/reporting/`
 
@@ -291,6 +297,33 @@ hardened: 0 findings
 ```
 
 The exact number of findings depends on the current scanner configuration and demo implementation.
+
+---
+
+## OpenAPI Starter Config Generation
+
+AuthZ Scanner can generate a starter YAML configuration from an OpenAPI document:
+
+```bash
+python -m scanner.discovery.openapi \
+  --openapi http://127.0.0.1:8001/openapi.json \
+  --base-url http://127.0.0.1:8001 \
+  --output config/generated-from-openapi.yaml \
+  --compare-with config/vulnerable.yaml
+```
+
+This feature is intended to reduce manual setup time when onboarding a new API.
+
+It does not blindly decide final authorization rules. Generated tests include:
+
+- `review_required: true`
+- `review_notes`
+- placeholder identities such as `TODO_OWNER_EMAIL`
+- inferred BOLA, BFLA, excessive data exposure, mass assignment, and privilege escalation candidates
+
+The pentester should review and complete these fields before running the generated config against a real target.
+
+For the included vulnerable demo API, the current OpenAPI-generated starter config matches all manually defined BOLA and BFLA candidates, and adds one extra property authorization candidate for manual review.
 
 ---
 
@@ -580,6 +613,8 @@ Testing another REST API primarily requires a new configuration file containing 
 - property authorization rules
 - business impact statements for important tests or payloads
 
+OpenAPI starter generation can create the first draft of this file, but final authorization decisions still need human review.
+
 Authorization logic is highly dependent on application-specific business rules.
 
 For this reason, the scanner does not attempt to fully infer authorization expectations automatically.
@@ -650,7 +685,7 @@ The project currently has several intentional limitations:
 - Authorization expectations must largely be defined manually through configuration.
 - The scanner does not automatically discover complete business authorization rules.
 - Business impact quality depends on the API-specific context provided in configuration.
-- OpenAPI specifications are not yet used to automatically generate scanner configuration.
+- OpenAPI starter generation is heuristic and requires review before real-world use.
 - The included vulnerability modules focus primarily on authorization-related API security issues.
 - Some mutation-based tests can modify target application state.
 - The demo environment is designed for controlled security testing rather than production deployment.
@@ -661,8 +696,8 @@ The project currently has several intentional limitations:
 
 Planned improvements include:
 
-- OpenAPI-based configuration discovery
-- Automatic generation of starter scanner configuration from `/openapi.json`
+- More advanced OpenAPI-based configuration discovery
+- Better schema analysis for required request body fields
 - Configurable severity levels
 - Docker support for the scanner and demo APIs
 - Improved CI/CD security integration

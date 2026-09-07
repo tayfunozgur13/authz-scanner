@@ -247,6 +247,47 @@ property_auth:
 7. Her kritik test veya payload icin endpoint'e ozel business impact metni yaz.
 8. Scanner'i once tek hedefe, sonra varsa hardened/staging hedefe karsi calistir.
 
+## OpenAPI'den Starter Config Uretme
+
+Yeni bir API'de tum YAML dosyasini sifirdan yazmak yerine OpenAPI dokumanindan ilk taslak config uretilebilir:
+
+```bash
+python -m scanner.discovery.openapi \
+  --openapi http://127.0.0.1:8001/openapi.json \
+  --base-url http://127.0.0.1:8001 \
+  --output config/generated-from-openapi.yaml \
+  --compare-with config/vulnerable.yaml
+```
+
+`--openapi`, lokal bir JSON dosyasi veya HTTP URL olabilir.
+
+`--output`, uretilecek YAML dosyasidir.
+
+`--compare-with`, opsiyoneldir. Mevcut manuel config ile OpenAPI'den uretilen config'i method/path bazinda karsilastirir.
+
+Uretilen config bilincli olarak final config degildir. Her otomatik aday su alanlarla gelir:
+
+```yaml
+review_required: true
+review_notes:
+  - Generated from OpenAPI path GET /orders/{order_id}.
+  - Confirm owner_field and resource.id_field against the real response body.
+```
+
+Bu yaklasim su nedenle kullanilir:
+
+- OpenAPI endpointleri ve request/response semalarini gosterir.
+- Fakat hangi kullanici hangi kaynaga erisebilir sorusu is kuralidir.
+- Business impact de API'nin gercek baglamina baglidir.
+
+Bu yuzden generator hizli bir baslangic dosyasi verir; pentester `TODO_*`, `review_required` ve `review_notes` alanlarini kontrol ederek dosyayi calistirilabilir hale getirir.
+
+Demo vulnerable API icin uretilen ornek dosya:
+
+```text
+config/generated-from-openapi.yaml
+```
+
 ## Notlar
 
 - Scanner JWT decode etmez; token'i yalnizca bearer token olarak kullanir.
