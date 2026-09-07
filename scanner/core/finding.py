@@ -28,6 +28,7 @@ class Finding(BaseModel):
     method: str
     identity_name: str
     description: str
+    business_impact: str
     recommendation: str
     evidence: list[HttpEvidence]
 

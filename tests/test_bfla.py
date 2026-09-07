@@ -67,6 +67,7 @@ def build_config(resource_backed: bool = True) -> ScannerConfig:
                         ),
                     ),
                     expected_status=403,
+                    business_impact="Restricted workflow actions may be executed by regular users.",
                 )
             ]
         ),
@@ -151,6 +152,9 @@ def test_run_bfla_tests_returns_finding_when_privileged_function_succeeds() -> N
     assert findings[0].method == "POST"
     assert findings[0].endpoint == "/resources/{id}/privileged-action"
     assert findings[0].identity_name == "regular"
+    assert findings[0].business_impact == (
+        "Restricted workflow actions may be executed by regular users."
+    )
     assert findings[0].evidence[0].observed.status_code == 200
     assert findings[0].evidence[0].expected_status_code == 403
 

@@ -11,6 +11,12 @@ class BolaScanError(RuntimeError):
     pass
 
 
+DEFAULT_BOLA_BUSINESS_IMPACT = (
+    "A user may view or change another user's business records, which can cause "
+    "privacy exposure, unauthorized account activity, and loss of trust in customer data handling."
+)
+
+
 def select_role_pair(
     identities: dict[str, AuthenticatedIdentity],
     role: str,
@@ -153,6 +159,7 @@ def run_bola_test(
             f"{attack_result.status_code} when accessing another user's resource. "
             f"Expected status was {test_config.expected_status}."
         ),
+        business_impact=test_config.business_impact or DEFAULT_BOLA_BUSINESS_IMPACT,
         recommendation=(
             "Verify resource ownership before returning or modifying the object. "
             "Allow access only when the current identity owns the resource or has an explicit privileged role."

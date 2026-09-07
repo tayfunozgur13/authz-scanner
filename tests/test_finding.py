@@ -48,11 +48,13 @@ def test_finding_groups_vulnerability_metadata_and_evidence() -> None:
         method="GET",
         identity_name="attacker",
         description="A regular user can read a resource owned by another user.",
+        business_impact="Another user's business data may be exposed.",
         recommendation="Verify resource ownership before returning the object.",
         evidence=[evidence],
     )
 
     assert finding.vulnerability_class == VulnerabilityClass.BOLA
     assert finding.severity == Severity.HIGH
+    assert finding.business_impact == "Another user's business data may be exposed."
     assert finding.evidence_count == 1
     assert finding.evidence[0].observed.path == "/resources/resource-1"

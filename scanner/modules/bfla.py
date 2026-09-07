@@ -12,6 +12,12 @@ class BflaScanError(RuntimeError):
     pass
 
 
+DEFAULT_BFLA_BUSINESS_IMPACT = (
+    "A low-privilege user may execute restricted business operations, which can bypass "
+    "approval workflows and create unauthorized operational or financial actions."
+)
+
+
 def select_identity_by_role(
     identities: dict[str, AuthenticatedIdentity],
     role: str,
@@ -112,6 +118,7 @@ def run_bfla_test(
             f"{attack_result.status_code} when calling a privileged function. "
             f"Expected status was {test_config.expected_status}."
         ),
+        business_impact=test_config.business_impact or DEFAULT_BFLA_BUSINESS_IMPACT,
         recommendation=(
             "Enforce role checks before executing privileged functions. "
             "Return a consistent forbidden response for identities without the required role."

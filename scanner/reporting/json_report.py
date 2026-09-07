@@ -82,6 +82,7 @@ def build_json_report(result: Any, generated_at: datetime | None = None) -> dict
                 "method": finding.method,
                 "identity_name": finding.identity_name,
                 "description": finding.description,
+                "business_impact": finding.business_impact,
                 "recommendation": finding.recommendation,
                 "evidence": [
                     {

@@ -111,9 +111,12 @@ bola:
         method: GET
         path_template: /resources/{id}
       expected_status: 403
+      business_impact: Unauthorized access may expose another customer's resource data.
 ```
 
 BOLA testinde scanner ayni role sahip iki identity secer. Ilk identity ile resource listesi alinir, `owner_field` degeri profil id ile eslesen kaynak bulunur. Sonra ikinci identity ayni kaynaga erismeyi dener.
+
+`business_impact`, bulgu uretilirse rapora yazilacak is etkisini tanimlar. Bu alan opsiyoneldir. Verilmezse scanner zafiyet sinifina gore genel bir fallback impact kullanir.
 
 `path_template` icinde `{id}` kaynak id ile doldurulur. Ek path parametreleri icin `path_params` kullanilabilir:
 
@@ -143,6 +146,7 @@ bfla:
         method: POST
         path_template: /resources/{id}/approve
       expected_status: 403
+      business_impact: Unauthorized approval may bypass operational review workflows.
 ```
 
 Dogudan fonksiyon testi:
@@ -156,6 +160,7 @@ bfla:
         method: GET
         path_template: /admin/users
       expected_status: 403
+      business_impact: Unauthorized admin access may expose user inventory and account metadata.
 ```
 
 BFLA testlerinde scanner verilen role sahip bir identity ile normalde yetkili role ait olmasi gereken fonksiyonu cagirmayi dener.
@@ -177,6 +182,7 @@ property_auth:
         - password_hash
         - api_key
         - refresh_token
+      business_impact: Sensitive fields may leak into clients, logs, or third-party monitoring systems.
 ```
 
 Scanner response body icinde yasakli alan adlarini recursive olarak arar. Alan bulunursa finding uretir; raporda degerler `[REDACTED]` olarak maskelenir.
@@ -198,9 +204,12 @@ property_auth:
             state: approved
           forbidden_effects:
             state: approved
+          business_impact: Users may force a trusted state without the required approval process.
 ```
 
 Scanner payload icindeki server-controlled alanlari gonderir. Response veya verification response icinde `forbidden_effects` degerleri gorulurse finding uretir.
+
+Mass assignment testlerinde `business_impact` test seviyesinde veya payload seviyesinde verilebilir. Payload seviyesindeki impact daha spesifiktir ve raporda onu kullanir.
 
 ### Privilege Escalation
 
@@ -222,6 +231,7 @@ property_auth:
             path_template: /me
           forbidden_effects:
             role: admin
+          business_impact: A regular user may gain administrative access.
 ```
 
 `{subject_id}`, profil endpointinden okunan id ile doldurulur. Verification request varsa scanner asil payload'dan sonra bu endpointi cagirir ve etkinin gercekten olusup olusmadigini kontrol eder.
@@ -234,10 +244,12 @@ property_auth:
 4. BOLA icin ownership iceren resource list endpointlerini sec.
 5. BFLA icin dusuk yetkili kullanicinin erismemesi gereken fonksiyonlari sec.
 6. Property authorization icin hassas response alanlarini ve server-controlled payload alanlarini tanimla.
-7. Scanner'i once tek hedefe, sonra varsa hardened/staging hedefe karsi calistir.
+7. Her kritik test veya payload icin endpoint'e ozel business impact metni yaz.
+8. Scanner'i once tek hedefe, sonra varsa hardened/staging hedefe karsi calistir.
 
 ## Notlar
 
 - Scanner JWT decode etmez; token'i yalnizca bearer token olarak kullanir.
 - Authorization kurallari is kuralina bagli oldugu icin tamamen otomatik belirlenmez.
+- Business impact de is baglamina baglidir. Scanner genel fallback metinler uretir, fakat kaliteli pentest raporu icin config'te API'ye ozel impact yazilmalidir.
 - Config icindeki demo endpointler degistirilebilir; scanner modulleri demo API'ye dogrudan bagimli degildir.

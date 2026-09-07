@@ -13,6 +13,20 @@ class PropertyAuthScanError(RuntimeError):
     pass
 
 
+DEFAULT_EXCESSIVE_DATA_EXPOSURE_BUSINESS_IMPACT = (
+    "Sensitive fields may leak into client applications or logs, increasing the risk of "
+    "credential exposure, privacy incidents, and compliance findings."
+)
+DEFAULT_MASS_ASSIGNMENT_BUSINESS_IMPACT = (
+    "A client may manipulate server-owned business fields, which can create unauthorized "
+    "state changes, pricing errors, or workflow bypasses."
+)
+DEFAULT_PRIVILEGE_ESCALATION_BUSINESS_IMPACT = (
+    "A low-privilege user may gain elevated access, exposing administrative functions and "
+    "sensitive data across the application."
+)
+
+
 def find_forbidden_fields(data: Any, forbidden_fields: list[str], prefix: str = "") -> list[str]:
     matches: list[str] = []
     if isinstance(data, dict):
@@ -64,6 +78,7 @@ def build_property_finding(
     evidence: HttpEvidence,
     vulnerability_class: VulnerabilityClass,
     description: str,
+    business_impact: str,
     recommendation: str,
 ) -> Finding:
     return Finding(
@@ -74,6 +89,7 @@ def build_property_finding(
         method=test_config.request.method.upper(),
         identity_name=identity.name,
         description=description,
+        business_impact=business_impact,
         recommendation=recommendation,
         evidence=[evidence],
     )
@@ -110,6 +126,10 @@ def run_excessive_data_exposure_test(
             evidence=evidence,
             vulnerability_class=VulnerabilityClass.EXCESSIVE_DATA_EXPOSURE,
             description="The API response includes fields marked as sensitive in scanner config.",
+            business_impact=(
+                test_config.business_impact
+                or DEFAULT_EXCESSIVE_DATA_EXPOSURE_BUSINESS_IMPACT
+            ),
             recommendation="Return explicit response DTOs or allowlists that exclude sensitive fields.",
         )
     ]
@@ -162,10 +182,20 @@ def run_payload_effect_test(
     if test_config.type == "privilege_escalation":
         vulnerability_class = VulnerabilityClass.PRIVILEGE_ESCALATION
         description = "A low-privilege identity was able to change a privilege-related property."
+        business_impact = (
+            payload.business_impact
+            or test_config.business_impact
+            or DEFAULT_PRIVILEGE_ESCALATION_BUSINESS_IMPACT
+        )
         recommendation = "Reject role or permission fields from self-service update payloads."
     else:
         vulnerability_class = VulnerabilityClass.MASS_ASSIGNMENT
         description = "The API accepted client-controlled values for server-controlled properties."
+        business_impact = (
+            payload.business_impact
+            or test_config.business_impact
+            or DEFAULT_MASS_ASSIGNMENT_BUSINESS_IMPACT
+        )
         recommendation = "Use explicit input DTOs and ignore or reject server-controlled fields."
 
     return [
@@ -175,6 +205,7 @@ def run_payload_effect_test(
             evidence=evidence,
             vulnerability_class=vulnerability_class,
             description=description,
+            business_impact=business_impact,
             recommendation=recommendation,
         )
     ]

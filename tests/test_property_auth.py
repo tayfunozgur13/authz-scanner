@@ -98,6 +98,7 @@ def test_run_property_auth_tests_reports_excessive_data_exposure() -> None:
         role="user",
         request=PropertyRequestConfig(method="GET", path_template="/me"),
         forbidden_fields=["password_hash", "api_key"],
+        business_impact="Sensitive credential metadata may leak to clients.",
     )
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -125,6 +126,7 @@ def test_run_property_auth_tests_reports_excessive_data_exposure() -> None:
     assert findings[0].vulnerability_class == "Excessive Data Exposure"
     assert findings[0].endpoint == "/me"
     assert findings[0].identity_name == "regular"
+    assert findings[0].business_impact == "Sensitive credential metadata may leak to clients."
     assert "credentials.password_hash" in findings[0].evidence[0].description
 
 
@@ -166,6 +168,7 @@ def test_run_property_auth_tests_tries_multiple_mass_assignment_payloads() -> No
                 name="force_approved_state",
                 json_body={"state": "approved"},
                 forbidden_effects={"state": "approved"},
+                business_impact="A user may bypass approval workflows.",
             ),
             PropertyPayloadConfig(
                 name="force_low_total",
@@ -198,6 +201,7 @@ def test_run_property_auth_tests_tries_multiple_mass_assignment_payloads() -> No
     assert seen_payloads == [{"state": "approved"}, {"total_amount": "0.01"}]
     assert len(findings) == 2
     assert {finding.vulnerability_class for finding in findings} == {"Mass Assignment"}
+    assert findings[0].business_impact == "A user may bypass approval workflows."
 
 
 def test_run_property_auth_tests_verifies_privilege_escalation_after_payload() -> None:
@@ -212,6 +216,7 @@ def test_run_property_auth_tests_verifies_privilege_escalation_after_payload() -
                 json_body={"role": "admin"},
                 verification=PropertyRequestConfig(method="GET", path_template="/me"),
                 forbidden_effects={"role": "admin"},
+                business_impact="A user may gain administrative privileges.",
             )
         ],
     )
@@ -237,3 +242,4 @@ def test_run_property_auth_tests_verifies_privilege_escalation_after_payload() -
     assert len(findings) == 1
     assert findings[0].vulnerability_class == "Privilege Escalation"
     assert findings[0].endpoint == "/users/{subject_id}"
+    assert findings[0].business_impact == "A user may gain administrative privileges."

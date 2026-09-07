@@ -60,6 +60,7 @@ def build_config(expected_status: int = 403) -> ScannerConfig:
                         path_template="/resources/{id}",
                     ),
                     expected_status=expected_status,
+                    business_impact="Cross-user access may expose customer records.",
                 )
             ]
         ),
@@ -192,6 +193,7 @@ def test_run_bola_tests_returns_finding_when_cross_user_access_succeeds() -> Non
     assert findings[0].method == "GET"
     assert findings[0].endpoint == "/resources/{id}"
     assert findings[0].identity_name == "attacker"
+    assert findings[0].business_impact == "Cross-user access may expose customer records."
     assert findings[0].evidence[0].observed.status_code == 200
     assert findings[0].evidence[0].expected_status_code == 403
 

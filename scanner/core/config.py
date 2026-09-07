@@ -47,6 +47,7 @@ class BolaTestConfig(BaseModel):
     resource: BolaResourceConfig
     attack: BolaAttackConfig
     expected_status: int
+    business_impact: str | None = None
 
 
 class BolaConfig(BaseModel):
@@ -72,6 +73,7 @@ class BflaTestConfig(BaseModel):
     attack: BflaAttackConfig
     expected_status: int
     resource: BflaResourceConfig | None = None
+    business_impact: str | None = None
 
 
 class BflaConfig(BaseModel):
@@ -89,6 +91,7 @@ class PropertyPayloadConfig(BaseModel):
     json_body: dict[str, Any]
     forbidden_effects: dict[str, Any] = Field(default_factory=dict)
     verification: PropertyRequestConfig | None = None
+    business_impact: str | None = None
 
 
 class PropertyAuthTestConfig(BaseModel):
@@ -98,6 +101,7 @@ class PropertyAuthTestConfig(BaseModel):
     request: PropertyRequestConfig
     forbidden_fields: list[str] = Field(default_factory=list)
     payloads: list[PropertyPayloadConfig] = Field(default_factory=list)
+    business_impact: str | None = None
 
 
 class PropertyAuthConfig(BaseModel):

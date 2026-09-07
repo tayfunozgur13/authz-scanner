@@ -111,6 +111,8 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
             f"<p>{escape_html(finding.description)}</p>"
             "<h4>Impact</h4>"
             f"<p>{escape_html(get_impact_statement(finding.vulnerability_class.value))}</p>"
+            "<h4>Business Impact</h4>"
+            f"<p>{escape_html(finding.business_impact)}</p>"
             "<h4>Steps to Reproduce</h4>"
             f"<ol>{steps}</ol>"
             "<h4>Evidence</h4>"

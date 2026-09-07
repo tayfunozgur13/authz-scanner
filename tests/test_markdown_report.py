@@ -44,6 +44,7 @@ def build_finding() -> Finding:
         method="GET",
         identity_name="regular",
         description="A regular user accessed another user's resource.",
+        business_impact="Another customer's data may be exposed.",
         recommendation="Check resource ownership before returning the resource.",
         evidence=[
             HttpEvidence(
@@ -75,6 +76,7 @@ def build_bfla_finding() -> Finding:
         method="GET",
         identity_name="regular",
         description="A regular user accessed an admin function.",
+        business_impact="Administrative user data may be exposed.",
         recommendation="Require admin role before executing privileged functions.",
         evidence=[
             HttpEvidence(
@@ -148,6 +150,8 @@ def test_build_markdown_report_includes_summary_findings_and_evidence() -> None:
     assert "#### Overview" in report
     assert "#### Impact" in report
     assert "An attacker may access or modify resources owned by another user" in report
+    assert "#### Business Impact" in report
+    assert "Another customer's data may be exposed." in report
     assert "#### Affected Endpoint" in report
     assert "#### Steps to Reproduce" in report
     assert "1. Authenticate as `regular`." in report

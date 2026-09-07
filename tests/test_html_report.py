@@ -36,6 +36,7 @@ def build_finding() -> Finding:
         method="GET",
         identity_name="regular",
         description="A regular user accessed another user's resource.",
+        business_impact="Another customer's data may be exposed.",
         recommendation="Check resource ownership before returning the resource.",
         evidence=[
             HttpEvidence(
@@ -76,6 +77,8 @@ def test_build_html_report_includes_summary_findings_and_redacted_evidence() -> 
     assert "<strong>1</strong>" in report
     assert "BOLA: same_role_users_cannot_read_each_others_resources" in report
     assert "API1: Broken Object Level Authorization" in report
+    assert "Business Impact" in report
+    assert "Another customer&#x27;s data may be exposed." in report
     assert "GET /resources/1" in report
     assert "Appendix 1.1" in report
     assert "&quot;password&quot;: &quot;[REDACTED]&quot;" in report

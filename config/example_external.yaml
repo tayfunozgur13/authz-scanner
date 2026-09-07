@@ -37,6 +37,7 @@ bola:
         method: GET
         path_template: /resources/{id}
       expected_status: 403
+      business_impact: Unauthorized cross-user resource access may expose customer data or allow account-level data tampering.
 
 bfla:
   tests:
@@ -46,6 +47,7 @@ bfla:
         method: GET
         path_template: /admin/users
       expected_status: 403
+      business_impact: Unauthorized access to administrative functions may expose user inventory or enable privileged business operations.
 
 property_auth:
   tests:
@@ -61,6 +63,7 @@ property_auth:
         - token
         - api_key
         - secret
+      business_impact: Sensitive field exposure may leak credentials or secrets into client applications and logs.
     - name: create_resource_must_not_accept_server_controlled_fields
       type: mass_assignment
       role: user
@@ -73,3 +76,4 @@ property_auth:
             state: approved
           forbidden_effects:
             state: approved
+          business_impact: A user may force a server-controlled state and bypass normal review or approval workflows.

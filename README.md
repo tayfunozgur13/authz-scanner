@@ -403,9 +403,13 @@ Each finding can contain:
 - OWASP API category
 - Affected endpoint
 - Impact
+- Business impact
 - Steps to reproduce
 - Evidence summary
 - Remediation guidance
+
+Business impact can be defined in scanner configuration for each test or payload.
+This keeps the scanner reusable across APIs while allowing the report to explain the real business risk of each endpoint.
 
 ---
 
@@ -574,12 +578,15 @@ Testing another REST API primarily requires a new configuration file containing 
 - BOLA rules
 - BFLA rules
 - property authorization rules
+- business impact statements for important tests or payloads
 
 Authorization logic is highly dependent on application-specific business rules.
 
 For this reason, the scanner does not attempt to fully infer authorization expectations automatically.
 
 Instead, expected behavior is defined explicitly through configuration files.
+
+The same rule applies to business impact. The scanner includes generic fallback impact text, but a stronger pentest report should define API-specific business impact in YAML.
 
 For additional details, see:
 
@@ -642,6 +649,7 @@ The project currently has several intentional limitations:
 
 - Authorization expectations must largely be defined manually through configuration.
 - The scanner does not automatically discover complete business authorization rules.
+- Business impact quality depends on the API-specific context provided in configuration.
 - OpenAPI specifications are not yet used to automatically generate scanner configuration.
 - The included vulnerability modules focus primarily on authorization-related API security issues.
 - Some mutation-based tests can modify target application state.
