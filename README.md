@@ -683,6 +683,7 @@ target:
 auth:
   login_path: "/login"
   login_method: "POST"
+  credential_location: "header"
   token_field: "access_token"
   token_path: "data.access_token"
   auth_header_name: "Authorization"
@@ -704,6 +705,16 @@ identities:
 ```
 
 Target-specific authorization rules can then be defined without changing the scanner engine.
+
+For cookie/session based APIs, use:
+
+```yaml
+auth:
+  login_path: "/session"
+  token_field: "token"
+  credential_location: "cookie"
+  cookie_name: "session_id"
+```
 
 ---
 

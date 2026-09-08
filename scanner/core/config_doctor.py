@@ -6,7 +6,12 @@ import httpx
 from pydantic import SecretStr
 
 from scanner.core.config import ScannerConfig
-from scanner.core.identity import build_auth_headers, get_value_by_path, render_login_body
+from scanner.core.identity import (
+    build_auth_headers,
+    extract_cookie_token,
+    get_value_by_path,
+    render_login_body,
+)
 
 
 @dataclass
@@ -87,6 +92,7 @@ def _check_static_config(config: ScannerConfig, result: DoctorResult) -> None:
     _check_required_text(result, "Auth token field", config.auth.token_field)
     _check_required_text(result, "Profile id field", config.profile.id_field)
     _check_method(result, "Auth login method", config.auth.login_method)
+    _check_credential_location(config, result)
     _check_required_text(result, "Auth header name", config.auth.auth_header_name)
     _check_identities(config, result)
     _check_bola_tests(config, result)
@@ -120,6 +126,29 @@ def _check_method(result: DoctorResult, name: str, method: str) -> None:
             "fail",
             f"Unknown HTTP method: {method}",
             f"Use one of: {', '.join(sorted(HTTP_METHODS))}.",
+        )
+
+
+def _check_credential_location(config: ScannerConfig, result: DoctorResult) -> None:
+    if config.auth.credential_location in {"header", "cookie"}:
+        _add(result, "Auth credential location", "pass", config.auth.credential_location)
+    else:
+        _add(
+            result,
+            "Auth credential location",
+            "fail",
+            f"Unsupported credential location: {config.auth.credential_location}",
+            "Use 'header' or 'cookie'.",
+        )
+        return
+
+    if config.auth.credential_location == "cookie" and not config.auth.cookie_name:
+        _add(
+            result,
+            "Auth cookie name",
+            "fail",
+            "Cookie auth is enabled but auth.cookie_name is empty.",
+            "Set auth.cookie_name to the session cookie name returned by the API.",
         )
 
 
@@ -459,7 +488,10 @@ def _check_login(
             _add(result, f"Login '{name}'", "fail", "Login response is not JSON.", "Return a JSON body containing the configured token field.")
             continue
         token_path = config.auth.token_path or config.auth.token_field
-        token = get_value_by_path(body, token_path)
+        cookie_token = extract_cookie_token(response, config.auth)
+        if cookie_token is not None:
+            client.cookies.clear()
+        token = cookie_token or get_value_by_path(body, token_path)
         if isinstance(token, str) and token:
             tokens[name] = token
             _add(result, f"Login '{name}'", "pass", "Token found.")
@@ -481,7 +513,10 @@ def _check_profiles(
     tokens: dict[str, str],
 ) -> None:
     for name, token in tokens.items():
-        response = client.get(config.profile.path, headers=build_auth_headers(config.auth, token))
+        response = client.get(
+            config.profile.path,
+            headers=build_auth_headers(config.auth, token),
+        )
         if response.status_code != 200:
             _add(result, f"Profile '{name}'", "fail", f"Profile returned {response.status_code}.", "Check profile.path and bearer token handling.")
             continue
@@ -588,7 +623,10 @@ def _check_resource_list(
     if method.upper() != "GET":
         _add(result, name, "warn", f"Skipped live list check for {method.upper()} {path}.", "Use GET list endpoints when possible so doctor can verify resource fields safely.")
         return
-    response = client.get(path, headers=build_auth_headers(config.auth, token))
+    response = client.get(
+        path,
+        headers=build_auth_headers(config.auth, token),
+    )
     if response.status_code != 200:
         _add(result, name, "fail", f"Resource list returned {response.status_code}.", "Check the list path and whether the selected identity has access to its own resources.")
         return
@@ -625,4 +663,3 @@ def _first_identity_name_for_role(config: ScannerConfig, role: str) -> str | Non
         if identity.role == role:
             return name
     return None
-

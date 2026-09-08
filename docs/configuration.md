@@ -53,9 +53,11 @@ auth:
   login_path: /session
   token_field: token
   login_method: POST
+  credential_location: header
   token_path: data.access.token
   auth_header_name: Authorization
   auth_scheme: Bearer
+  cookie_name: null
   login_body:
     username: "{email}"
     password: "{password}"
@@ -114,6 +116,24 @@ auth:
 ```
 
 Bu durumda scanner `X-API-Key: <token>` header'i gonderir. `auth_scheme: Bearer` kullanilirsa `Authorization: Bearer <token>` formati uretilir.
+
+Cookie/session tabanli API'ler icin:
+
+```yaml
+auth:
+  login_path: /session
+  token_field: token
+  credential_location: cookie
+  cookie_name: session_id
+```
+
+Bu modda scanner login response icindeki `Set-Cookie` header'indan `session_id` degerini okur. Sonraki requestlerde her identity icin kendi cookie degeri gonderilir:
+
+```text
+Cookie: session_id=<identity-session-token>
+```
+
+Bu ayrim onemlidir; iki farkli identity ayni HTTP client icinde login olsa bile scanner requestleri identity'ye ait cookie ile gonderir.
 
 ## Profile
 

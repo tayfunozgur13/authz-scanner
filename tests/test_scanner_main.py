@@ -354,6 +354,16 @@ def test_config_doctor_accepts_property_resource_id_placeholders() -> None:
     )
 
 
+def test_config_doctor_requires_cookie_name_for_cookie_auth() -> None:
+    config = build_config()
+    config.auth.credential_location = "cookie"
+
+    result = run_config_doctor(config, live=False)
+
+    assert result.has_failures is True
+    assert any(check.name == "Auth cookie name" and check.status == "fail" for check in result.checks)
+
+
 def test_run_cli_config_doctor_subcommand_checks_live_target(tmp_path, monkeypatch, capsys) -> None:
     config_path = tmp_path / "scanner.yaml"
     config_path.write_text(
@@ -432,6 +442,100 @@ property_auth:
     assert "Config Doctor: external-api" in captured.out
     assert "Health endpoint" in captured.out
     assert "owner_id" in captured.out
+
+
+def test_run_cli_config_doctor_supports_cookie_auth(tmp_path, monkeypatch, capsys) -> None:
+    config_path = tmp_path / "scanner.yaml"
+    config_path.write_text(
+        """
+target:
+  name: cookie-api
+  base_url: http://testserver
+
+auth:
+  login_path: /session
+  token_field: token
+  credential_location: cookie
+  cookie_name: session_id
+
+profile:
+  path: /me
+  id_field: subject_id
+
+identities:
+  owner:
+    email: owner@example.test
+    password: owner-secret
+    role: user
+  attacker:
+    email: attacker@example.test
+    password: attacker-secret
+    role: user
+
+bola:
+  tests:
+    - name: users_cannot_read_each_others_resources
+      role: user
+      owner_field: owner_id
+      resource:
+        list_method: GET
+        list_path: /resources
+        id_field: id
+      attack:
+        method: GET
+        path_template: /resources/{id}
+      expected_status: 403
+
+bfla:
+  tests: []
+
+property_auth:
+  tests: []
+"""
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/health":
+            return httpx.Response(200, json={"status": "ok"})
+        if request.url.path == "/openapi.json":
+            return httpx.Response(200, json={"info": {"title": "Cookie API"}})
+        if request.url.path == "/session":
+            body = request.content.decode()
+            token = "owner-cookie" if "owner@example.test" in body else "attacker-cookie"
+            return httpx.Response(
+                200,
+                json={"detail": "ok"},
+                headers={"Set-Cookie": f"session_id={token}; Path=/; HttpOnly"},
+            )
+        if request.url.path == "/me":
+            assert request.headers["cookie"] in {
+                "session_id=owner-cookie",
+                "session_id=attacker-cookie",
+            }
+        if request.url.path == "/resources":
+            assert request.headers["cookie"] == "session_id=owner-cookie"
+        if request.url.path == "/me":
+            return httpx.Response(200, json={"subject_id": "subject-owner"})
+        if request.url.path == "/resources":
+            return httpx.Response(200, json=[{"id": "resource-1", "owner_id": "subject-owner"}])
+        return httpx.Response(404, json={})
+
+    class MockClient(httpx.Client):
+        def __init__(self, *args, **kwargs) -> None:
+            super().__init__(
+                transport=httpx.MockTransport(handler),
+                base_url=kwargs["base_url"],
+                timeout=kwargs["timeout"],
+            )
+
+    monkeypatch.setattr(httpx, "Client", MockClient)
+
+    exit_code = run_cli(["config", "doctor", "--config", str(config_path)])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Config Doctor: cookie-api" in captured.out
+    assert "Login 'owner'" in captured.out
 
 
 def test_run_cli_doctor_flag_supports_offline_mode(tmp_path, capsys) -> None:

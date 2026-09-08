@@ -199,3 +199,53 @@ def test_login_identity_supports_static_token_and_custom_auth_header() -> None:
 
     assert identity.access_token == "static-token"
     assert identity.authorization_header == {"X-API-Key": "static-token"}
+
+
+def test_login_identity_supports_cookie_from_login_response() -> None:
+    config = build_config()
+    config.auth.credential_location = "cookie"
+    config.auth.cookie_name = "session_id"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == "/session"
+        return httpx.Response(
+            200,
+            json={"detail": "ok"},
+            headers={"Set-Cookie": "session_id=cookie-token; Path=/; HttpOnly"},
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler), base_url="http://testserver")
+
+    identity = login_identity(
+        client=client,
+        auth_config=config.auth,
+        name="owner",
+        identity=config.identities["owner"],
+    )
+
+    assert identity.access_token == "cookie-token"
+    assert identity.authorization_header == {"Cookie": "session_id=cookie-token"}
+    assert identity.auth_cookies == {"session_id": "cookie-token"}
+
+
+def test_login_identity_supports_static_cookie_token() -> None:
+    config = build_config()
+    config.auth.credential_location = "cookie"
+    config.auth.cookie_name = "session_id"
+    config.identities["owner"].access_token = "static-cookie"
+
+    client = httpx.Client(
+        transport=httpx.MockTransport(lambda request: httpx.Response(500)),
+        base_url="http://testserver",
+    )
+
+    identity = login_identity(
+        client=client,
+        auth_config=config.auth,
+        name="owner",
+        identity=config.identities["owner"],
+    )
+
+    assert identity.authorization_header == {"Cookie": "session_id=static-cookie"}
+    assert identity.auth_cookies == {"session_id": "static-cookie"}

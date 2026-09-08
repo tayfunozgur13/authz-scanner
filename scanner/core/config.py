@@ -15,9 +15,11 @@ class AuthConfig(BaseModel):
     login_path: str
     token_field: str
     login_method: str = "POST"
+    credential_location: str = "header"
     token_path: str | None = None
     auth_header_name: str = "Authorization"
     auth_scheme: str = "Bearer"
+    cookie_name: str | None = None
     login_body: dict[str, Any] = Field(
         default_factory=lambda: {
             "email": "{email}",

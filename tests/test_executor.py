@@ -45,6 +45,29 @@ def test_executor_sends_authenticated_json_request() -> None:
     assert result.is_success is True
 
 
+def test_executor_sends_identity_cookies() -> None:
+    identity = AuthenticatedIdentity(
+        name="owner",
+        email="owner@example.test",
+        role="user",
+        access_token="cookie-token",
+        auth_headers={},
+        auth_cookies={"session_id": "cookie-token"},
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.headers["cookie"] == "session_id=cookie-token"
+        assert "authorization" not in request.headers
+        return httpx.Response(200, json={"ok": True})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler), base_url="http://testserver")
+    executor = HttpExecutor(client)
+
+    result = executor.request(identity=identity, method="GET", path="/resources")
+
+    assert result.status_code == 200
+
+
 def test_executor_stores_text_response_when_body_is_not_json() -> None:
     client = httpx.Client(
         transport=httpx.MockTransport(lambda request: httpx.Response(403, text="Forbidden")),

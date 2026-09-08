@@ -6,8 +6,10 @@ auth:
   login_path: /session
   token_field: token
   login_method: POST
+  credential_location: header
   auth_header_name: Authorization
   auth_scheme: Bearer
+  cookie_name: null
   login_body:
     email: "{email}"
     password: "{password}"
