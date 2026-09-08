@@ -112,7 +112,9 @@ def test_build_json_report_serializes_scan_result_without_tokens() -> None:
     ]
     assert "access_token" not in json.dumps(report)
     assert report["summary"]["finding_count"] == 1
+    assert report["summary"]["max_risk_score"] == 80
     assert report["findings"][0]["class"] == "BOLA"
+    assert report["findings"][0]["risk_score"] == 80
     assert report["findings"][0]["business_impact"] == "Another customer's data may be exposed."
     assert report["findings"][0]["evidence"][0]["expected_status_code"] == 403
     assert report["findings"][0]["evidence"][0]["observed"]["request_json"] == {

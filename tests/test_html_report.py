@@ -75,6 +75,7 @@ def test_build_html_report_includes_summary_findings_and_redacted_evidence() -> 
     assert "<title>AuthZ Scanner Report - External API</title>" in report
     assert "<strong>External API</strong>" in report
     assert "<strong>1</strong>" in report
+    assert "<dt>Risk Score</dt><dd>80</dd>" in report
     assert "BOLA: same_role_users_cannot_read_each_others_resources" in report
     assert "API1: Broken Object Level Authorization" in report
     assert "Business Impact" in report

@@ -74,6 +74,8 @@ bola:
         path_params:
           child_id: children.0.id
       expected_status: 403
+      severity: critical
+      risk_score: 91
 
 bfla:
   tests:
@@ -88,6 +90,8 @@ bfla:
         method: POST
         path_template: /resources/{id}/privileged-action
       expected_status: 403
+      severity: high
+      risk_score: 82
     - name: low_privilege_users_cannot_open_admin_panel
       role: user
       attack:
@@ -100,6 +104,8 @@ property_auth:
     - name: profile_must_not_expose_sensitive_fields
       type: excessive_data_exposure
       role: user
+      severity: medium
+      risk_score: 45
       request:
         method: GET
         path_template: /me
@@ -114,6 +120,8 @@ property_auth:
         path_template: /resources
       payloads:
         - name: force_admin_only_state
+          severity: critical
+          risk_score: 96
           json_body:
             state: approved
           forbidden_effects:
@@ -146,6 +154,8 @@ property_auth:
     assert bola_test.attack.path_template == "/resources/{id}"
     assert bola_test.attack.path_params == {"child_id": "children.0.id"}
     assert bola_test.expected_status == 403
+    assert bola_test.severity == "critical"
+    assert bola_test.risk_score == 91
     assert len(config.bfla.tests) == 2
     resource_bfla_test = config.bfla.tests[0]
     assert resource_bfla_test.name == "low_privilege_users_cannot_run_privileged_action"
@@ -156,17 +166,23 @@ property_auth:
     assert resource_bfla_test.attack.method == "POST"
     assert resource_bfla_test.attack.path_template == "/resources/{id}/privileged-action"
     assert resource_bfla_test.expected_status == 403
+    assert resource_bfla_test.severity == "high"
+    assert resource_bfla_test.risk_score == 82
     direct_bfla_test = config.bfla.tests[1]
     assert direct_bfla_test.resource is None
     assert direct_bfla_test.attack.path_template == "/admin/users"
     assert len(config.property_auth.tests) == 2
     exposure_test = config.property_auth.tests[0]
     assert exposure_test.type == "excessive_data_exposure"
+    assert exposure_test.severity == "medium"
+    assert exposure_test.risk_score == 45
     assert exposure_test.request.path_template == "/me"
     assert exposure_test.forbidden_fields == ["password_hash", "api_key"]
     mass_assignment_test = config.property_auth.tests[1]
     assert mass_assignment_test.type == "mass_assignment"
     assert mass_assignment_test.payloads[0].name == "force_admin_only_state"
+    assert mass_assignment_test.payloads[0].severity == "critical"
+    assert mass_assignment_test.payloads[0].risk_score == 96
     assert mass_assignment_test.payloads[0].forbidden_effects == {"state": "approved"}
 
 

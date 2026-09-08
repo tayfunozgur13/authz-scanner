@@ -144,7 +144,7 @@ def test_build_markdown_report_includes_summary_findings_and_evidence() -> None:
     assert "### Findings by Class" in report
     assert "| BOLA | 1 |" in report
     assert "### Findings Table" in report
-    assert "| 1 | high | BOLA | GET | `/resources/{id}` | regular |" in report
+    assert "| 1 | high | 80 | BOLA | GET | `/resources/{id}` | regular |" in report
     assert "### 1. BOLA: same_role_users_cannot_read_each_others_resources" in report
     assert "- OWASP API Category: `API1: Broken Object Level Authorization`" in report
     assert "#### Overview" in report

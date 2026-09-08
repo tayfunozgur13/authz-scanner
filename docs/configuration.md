@@ -269,6 +269,56 @@ bfla:
 
 BFLA testlerinde scanner verilen role sahip bir identity ile normalde yetkili role ait olmasi gereken fonksiyonu cagirmayi dener.
 
+## Severity and Risk Score
+
+Her BOLA, BFLA ve property authorization testi opsiyonel olarak `severity` ve `risk_score` alabilir.
+
+```yaml
+severity: critical
+risk_score: 95
+```
+
+Desteklenen severity degerleri:
+
+- `low`
+- `medium`
+- `high`
+- `critical`
+
+`risk_score` 0-100 arasinda sayisal bir degerdir.
+
+Bu alanlar verilirse scanner raporda bu degerleri kullanir. Verilmezse scanner vulnerability class, HTTP method ve endpoint adindan makul bir varsayilan hesaplar.
+
+Ornek:
+
+```yaml
+bfla:
+  tests:
+    - name: users_cannot_refund_orders
+      role: customer
+      attack:
+        method: POST
+        path_template: /orders/{id}/refund
+      expected_status: 403
+      severity: critical
+      risk_score: 98
+```
+
+Property authorization payloadlari icin payload seviyesinde override verilebilir:
+
+```yaml
+payloads:
+  - name: force_refunded_status
+    severity: critical
+    risk_score: 94
+    json_body:
+      status: refunded
+    forbidden_effects:
+      status: refunded
+```
+
+Payload seviyesi, test seviyesinden daha spesifiktir. Bu nedenle ayni test altindaki farkli payloadlar farkli risk skoruyla raporlanabilir.
+
 ## Property Authorization Tests
 
 ### Excessive Data Exposure

@@ -127,6 +127,7 @@ def print_scan_result(result: ScannerRunResult) -> None:
         findings_table = Table(title="Findings")
         findings_table.add_column("Class")
         findings_table.add_column("Severity")
+        findings_table.add_column("Risk")
         findings_table.add_column("Method")
         findings_table.add_column("Endpoint")
         findings_table.add_column("Identity")
@@ -136,6 +137,7 @@ def print_scan_result(result: ScannerRunResult) -> None:
             findings_table.add_row(
                 finding.vulnerability_class.value,
                 finding.severity.value,
+                str(finding.risk_score),
                 finding.method,
                 finding.endpoint,
                 finding.identity_name,

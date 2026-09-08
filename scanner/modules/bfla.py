@@ -3,7 +3,8 @@ from typing import Any
 from scanner.core.config import BflaResourceConfig, BflaTestConfig, ScannerConfig
 from scanner.core.evidence import HttpEvidence
 from scanner.core.executor import HttpExecutor
-from scanner.core.finding import Finding, Severity, VulnerabilityClass
+from scanner.core.finding import Finding, VulnerabilityClass
+from scanner.core.risk import resolve_risk
 from scanner.core.identity import AuthenticatedIdentity
 from scanner.modules.bola import get_identity_subject_id
 
@@ -106,10 +107,18 @@ def run_bfla_test(
             f"'{test_config.attack.path_template}'."
         ),
     )
+    severity, risk_score = resolve_risk(
+        vulnerability_class=VulnerabilityClass.BFLA,
+        method=test_config.attack.method,
+        endpoint=test_config.attack.path_template,
+        severity_override=test_config.severity,
+        risk_score_override=test_config.risk_score,
+    )
     finding = Finding(
         title=f"BFLA: {test_config.name}",
         vulnerability_class=VulnerabilityClass.BFLA,
-        severity=Severity.HIGH,
+        severity=severity,
+        risk_score=risk_score,
         endpoint=test_config.attack.path_template,
         method=test_config.attack.method.upper(),
         identity_name=identity.name,

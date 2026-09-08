@@ -3,7 +3,8 @@ from typing import Any
 from scanner.core.config import PropertyAuthTestConfig, PropertyPayloadConfig, ScannerConfig
 from scanner.core.evidence import HttpEvidence
 from scanner.core.executor import HttpExecutor
-from scanner.core.finding import Finding, Severity, VulnerabilityClass
+from scanner.core.finding import Finding, VulnerabilityClass
+from scanner.core.risk import resolve_risk
 from scanner.core.identity import AuthenticatedIdentity
 from scanner.modules.bfla import select_identity_by_role
 from scanner.modules.bola import get_identity_subject_id
@@ -145,11 +146,21 @@ def build_property_finding(
     description: str,
     business_impact: str,
     recommendation: str,
+    severity_override: Any = None,
+    risk_score_override: int | None = None,
 ) -> Finding:
+    severity, risk_score = resolve_risk(
+        vulnerability_class=vulnerability_class,
+        method=test_config.request.method,
+        endpoint=test_config.request.path_template,
+        severity_override=severity_override,
+        risk_score_override=risk_score_override,
+    )
     return Finding(
         title=f"{vulnerability_class.value}: {test_config.name}",
         vulnerability_class=vulnerability_class,
-        severity=Severity.HIGH,
+        severity=severity,
+        risk_score=risk_score,
         endpoint=test_config.request.path_template,
         method=test_config.request.method.upper(),
         identity_name=identity.name,
@@ -204,6 +215,8 @@ def run_excessive_data_exposure_test(
                 or DEFAULT_EXCESSIVE_DATA_EXPOSURE_BUSINESS_IMPACT
             ),
             recommendation="Return explicit response DTOs or allowlists that exclude sensitive fields.",
+            severity_override=test_config.severity,
+            risk_score_override=test_config.risk_score,
         )
     ]
 
@@ -291,6 +304,8 @@ def run_payload_effect_test(
             description=description,
             business_impact=business_impact,
             recommendation=recommendation,
+            severity_override=payload.severity or test_config.severity,
+            risk_score_override=payload.risk_score or test_config.risk_score,
         )
     ]
 

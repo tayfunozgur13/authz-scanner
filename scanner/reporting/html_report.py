@@ -8,6 +8,7 @@ from scanner.reporting.json_report import redact_sensitive_values, sanitize_file
 from scanner.reporting.markdown_report import (
     build_reproduction_steps,
     count_findings_by_class,
+    count_findings_by_severity,
     get_impact_statement,
     get_owasp_api_category,
 )
@@ -33,10 +34,13 @@ def format_json_html(value: Any) -> str:
 def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
     timestamp = generated_at or datetime.now(UTC)
     class_counts = count_findings_by_class(result)
+    severity_counts = count_findings_by_severity(result)
+    max_risk_score = max((finding.risk_score for finding in result.findings), default=0)
     findings_rows = "\n".join(
         "<tr>"
         f"<td>{index}</td>"
         f"<td><span class=\"severity severity-{escape_html(finding.severity.value)}\">{escape_html(finding.severity.value)}</span></td>"
+        f"<td>{finding.risk_score}</td>"
         f"<td>{escape_html(finding.vulnerability_class.value)}</td>"
         f"<td>{escape_html(finding.method)}</td>"
         f"<td><code>{escape_html(finding.endpoint)}</code></td>"
@@ -50,6 +54,13 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
         f"<td>{count}</td>"
         "</tr>"
         for class_name, count in class_counts.items()
+    )
+    severity_rows = "\n".join(
+        "<tr>"
+        f"<td><span class=\"severity severity-{escape_html(severity)}\">{escape_html(severity)}</span></td>"
+        f"<td>{count}</td>"
+        "</tr>"
+        for severity, count in severity_counts.items()
     )
     identities_rows = "\n".join(
         "<tr>"
@@ -102,6 +113,7 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
             f"<h3>{finding_index}. {escape_html(finding.title)}</h3>"
             "<dl class=\"finding-meta\">"
             f"<dt>Severity</dt><dd>{escape_html(finding.severity.value)}</dd>"
+            f"<dt>Risk Score</dt><dd>{finding.risk_score}</dd>"
             f"<dt>Class</dt><dd>{escape_html(finding.vulnerability_class.value)}</dd>"
             f"<dt>OWASP API Category</dt><dd>{escape_html(get_owasp_api_category(finding.vulnerability_class.value))}</dd>"
             f"<dt>Endpoint</dt><dd><code>{escape_html(finding.method)} {escape_html(finding.endpoint)}</code></dd>"
@@ -261,7 +273,7 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
       font-size: 26px;
       margin-top: 4px;
     }}
-    .severity {{
+	    .severity {{
       display: inline-block;
       border-radius: 999px;
       padding: 2px 8px;
@@ -269,10 +281,22 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
       font-size: 12px;
       text-transform: uppercase;
     }}
-    .severity-high {{
-      background: #fee2e2;
-      color: #991b1b;
-    }}
+	    .severity-high {{
+	      background: #fee2e2;
+	      color: #991b1b;
+	    }}
+	    .severity-critical {{
+	      background: #7f1d1d;
+	      color: #ffffff;
+	    }}
+	    .severity-medium {{
+	      background: #fef3c7;
+	      color: #92400e;
+	    }}
+	    .severity-low {{
+	      background: #dcfce7;
+	      color: #166534;
+	    }}
     .empty-state {{
       color: var(--success);
       font-weight: 700;
@@ -307,10 +331,10 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
       <p>Target: <strong>{escape_html(result.target_name)}</strong></p>
       <p>Base URL: <code>{escape_html(result.base_url)}</code></p>
       <div class="summary-grid">
-        <div class="metric"><span>Generated At</span><strong>{escape_html(timestamp.isoformat())}</strong></div>
-        <div class="metric"><span>Total Findings</span><strong>{result.finding_count}</strong></div>
-        <div class="metric"><span>Health</span><strong>{escape_html(format_check(result.health_ok))}</strong></div>
-        <div class="metric"><span>OpenAPI</span><strong>{escape_html(format_check(result.openapi_ok))}</strong></div>
+	        <div class="metric"><span>Generated At</span><strong>{escape_html(timestamp.isoformat())}</strong></div>
+	        <div class="metric"><span>Total Findings</span><strong>{result.finding_count}</strong></div>
+	        <div class="metric"><span>Highest Risk</span><strong>{max_risk_score}</strong></div>
+	        <div class="metric"><span>OpenAPI</span><strong>{escape_html(format_check(result.openapi_ok))}</strong></div>
       </div>
     </header>
 
@@ -336,14 +360,18 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
     <section>
       <h2>Findings Summary</h2>
       {no_findings}
-      <table>
-        <thead><tr><th>Class</th><th>Count</th></tr></thead>
-        <tbody>{class_rows}</tbody>
-      </table>
-      <table>
-        <thead><tr><th>#</th><th>Severity</th><th>Class</th><th>Method</th><th>Endpoint</th><th>Identity</th></tr></thead>
-        <tbody>{findings_rows}</tbody>
-      </table>
+	      <table>
+	        <thead><tr><th>Class</th><th>Count</th></tr></thead>
+	        <tbody>{class_rows}</tbody>
+	      </table>
+	      <table>
+	        <thead><tr><th>Severity</th><th>Count</th></tr></thead>
+	        <tbody>{severity_rows}</tbody>
+	      </table>
+	      <table>
+	        <thead><tr><th>#</th><th>Severity</th><th>Risk Score</th><th>Class</th><th>Method</th><th>Endpoint</th><th>Identity</th></tr></thead>
+	        <tbody>{findings_rows}</tbody>
+	      </table>
     </section>
 
     <section>

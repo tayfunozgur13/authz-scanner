@@ -1,6 +1,6 @@
 import enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from scanner.core.evidence import HttpEvidence
 
@@ -24,6 +24,7 @@ class Finding(BaseModel):
     title: str
     vulnerability_class: VulnerabilityClass
     severity: Severity
+    risk_score: int = Field(default=80, ge=0, le=100)
     endpoint: str
     method: str
     identity_name: str

@@ -5,6 +5,8 @@ import yaml
 
 from pydantic import BaseModel, Field
 
+from scanner.core.finding import Severity
+
 
 class TargetConfig(BaseModel):
     name: str
@@ -72,6 +74,8 @@ class BolaTestConfig(BaseModel):
     resource: BolaResourceConfig
     attack: BolaAttackConfig
     expected_status: int
+    severity: Severity | None = None
+    risk_score: int | None = Field(default=None, ge=0, le=100)
     business_impact: str | None = None
     review_required: bool = False
     review_notes: list[str] = Field(default_factory=list)
@@ -100,6 +104,8 @@ class BflaTestConfig(BaseModel):
     attack: BflaAttackConfig
     expected_status: int
     resource: BflaResourceConfig | None = None
+    severity: Severity | None = None
+    risk_score: int | None = Field(default=None, ge=0, le=100)
     business_impact: str | None = None
     review_required: bool = False
     review_notes: list[str] = Field(default_factory=list)
@@ -127,6 +133,8 @@ class PropertyPayloadConfig(BaseModel):
     json_body: dict[str, Any]
     forbidden_effects: dict[str, Any] = Field(default_factory=dict)
     verification: PropertyRequestConfig | None = None
+    severity: Severity | None = None
+    risk_score: int | None = Field(default=None, ge=0, le=100)
     business_impact: str | None = None
     review_required: bool = False
     review_notes: list[str] = Field(default_factory=list)
@@ -140,6 +148,8 @@ class PropertyAuthTestConfig(BaseModel):
     resource: PropertyResourceConfig | None = None
     forbidden_fields: list[str] = Field(default_factory=list)
     payloads: list[PropertyPayloadConfig] = Field(default_factory=list)
+    severity: Severity | None = None
+    risk_score: int | None = Field(default=None, ge=0, le=100)
     business_impact: str | None = None
     review_required: bool = False
     review_notes: list[str] = Field(default_factory=list)

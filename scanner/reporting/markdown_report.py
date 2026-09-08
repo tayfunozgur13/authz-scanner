@@ -28,6 +28,14 @@ def count_findings_by_class(result: Any) -> dict[str, int]:
     return counts
 
 
+def count_findings_by_severity(result: Any) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for finding in result.findings:
+        severity = finding.severity.value
+        counts[severity] = counts.get(severity, 0) + 1
+    return counts
+
+
 def get_owasp_api_category(vulnerability_class: str) -> str:
     categories = {
         "BOLA": "API1: Broken Object Level Authorization",
@@ -90,6 +98,7 @@ def build_markdown_report(result: Any, generated_at: datetime | None = None) -> 
         f"- Base URL: `{result.base_url}`",
         f"- Generated At: `{timestamp.isoformat()}`",
         f"- Total Findings: `{result.finding_count}`",
+        f"- Highest Risk Score: `{max((finding.risk_score for finding in result.findings), default=0)}`",
         "",
         "## Scan Metadata",
         "",
@@ -138,11 +147,23 @@ def build_markdown_report(result: Any, generated_at: datetime | None = None) -> 
     for class_name, count in count_findings_by_class(result).items():
         lines.append(f"| {escape_table_cell(class_name)} | {count} |")
 
+    lines.extend(
+        [
+            "",
+            "### Findings by Severity",
+            "",
+            "| Severity | Count |",
+            "|---|---|",
+        ]
+    )
+    for severity, count in count_findings_by_severity(result).items():
+        lines.append(f"| {escape_table_cell(severity)} | {count} |")
+
     lines.extend(["", "### Findings Table", ""])
     lines.extend(
         [
-            "| # | Severity | Class | Method | Endpoint | Identity |",
-            "|---|---|---|---|---|---|",
+            "| # | Severity | Risk Score | Class | Method | Endpoint | Identity |",
+            "|---|---|---|---|---|---|---|",
         ]
     )
     for index, finding in enumerate(result.findings, start=1):
@@ -150,6 +171,7 @@ def build_markdown_report(result: Any, generated_at: datetime | None = None) -> 
             "| "
             f"{index} | "
             f"{escape_table_cell(finding.severity.value)} | "
+            f"{finding.risk_score} | "
             f"{escape_table_cell(finding.vulnerability_class.value)} | "
             f"{escape_table_cell(finding.method)} | "
             f"`{escape_table_cell(finding.endpoint)}` | "
@@ -164,6 +186,7 @@ def build_markdown_report(result: Any, generated_at: datetime | None = None) -> 
                 f"### {index}. {finding.title}",
                 "",
                 f"- Severity: `{finding.severity.value}`",
+                f"- Risk Score: `{finding.risk_score}`",
                 f"- Class: `{finding.vulnerability_class.value}`",
                 f"- OWASP API Category: `{get_owasp_api_category(finding.vulnerability_class.value)}`",
                 f"- Endpoint: `{finding.method} {finding.endpoint}`",

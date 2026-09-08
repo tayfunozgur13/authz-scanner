@@ -475,6 +475,7 @@ The Markdown and HTML reports include:
 Each finding can contain:
 
 - Severity
+- Risk score
 - Vulnerability class
 - OWASP API category
 - Affected endpoint
@@ -486,6 +487,46 @@ Each finding can contain:
 
 Business impact can be defined in scanner configuration for each test or payload.
 This keeps the scanner reusable across APIs while allowing the report to explain the real business risk of each endpoint.
+
+---
+
+## Severity and Risk Scoring
+
+Scanner findings include both a severity label and a numeric risk score:
+
+```text
+low       -> 20
+medium    -> 50
+high      -> 80
+critical  -> 95
+```
+
+The scanner can infer severity from vulnerability class, HTTP method, and endpoint context.
+
+Examples:
+
+- privilege escalation defaults to `critical`
+- unauthorized refund, approval, or admin actions default to `critical`
+- mutating BOLA requests such as `PUT` or `DELETE` default to `critical`
+- read-only customer data access usually defaults to `high`
+- lower-impact data exposure may default to `medium`
+
+For stronger pentest reporting, YAML config can explicitly override both values:
+
+```yaml
+bfla:
+  tests:
+    - name: users_cannot_refund_orders
+      role: customer
+      attack:
+        method: POST
+        path_template: /orders/{id}/refund
+      expected_status: 403
+      severity: critical
+      risk_score: 98
+```
+
+Payload-level overrides are also supported for property authorization tests, which lets different mass assignment payloads carry different risk scores.
 
 ---
 
@@ -792,7 +833,6 @@ Planned improvements include:
 
 - More advanced OpenAPI-based configuration discovery
 - Better schema analysis for required request body fields
-- Configurable severity levels
 - Docker support for the scanner and demo APIs
 - Improved CI/CD security integration
 - Additional API authorization test modules

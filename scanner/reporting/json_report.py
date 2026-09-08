@@ -72,12 +72,14 @@ def build_json_report(result: Any, generated_at: datetime | None = None) -> dict
         ],
         "summary": {
             "finding_count": result.finding_count,
+            "max_risk_score": max((finding.risk_score for finding in result.findings), default=0),
         },
         "findings": [
             {
                 "title": finding.title,
                 "class": finding.vulnerability_class.value,
                 "severity": finding.severity.value,
+                "risk_score": finding.risk_score,
                 "endpoint": finding.endpoint,
                 "method": finding.method,
                 "identity_name": finding.identity_name,
