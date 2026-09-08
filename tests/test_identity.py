@@ -71,8 +71,7 @@ def test_login_identity_returns_authenticated_identity() -> None:
 
     identity = login_identity(
         client=client,
-        login_path=config.auth.login_path,
-        token_field=config.auth.token_field,
+        auth_config=config.auth,
         name="owner",
         identity=config.identities["owner"],
     )
@@ -109,8 +108,7 @@ def test_login_identity_raises_when_login_fails() -> None:
     with pytest.raises(IdentityLoginError, match="Login failed"):
         login_identity(
             client=client,
-            login_path=config.auth.login_path,
-            token_field=config.auth.token_field,
+            auth_config=config.auth,
             name="owner",
             identity=config.identities["owner"],
         )
@@ -123,11 +121,10 @@ def test_login_identity_raises_when_token_field_is_missing() -> None:
     )
     config = build_config()
 
-    with pytest.raises(IdentityLoginError, match="did not include token field"):
+    with pytest.raises(IdentityLoginError, match="did not include token path"):
         login_identity(
             client=client,
-            login_path=config.auth.login_path,
-            token_field=config.auth.token_field,
+            auth_config=config.auth,
             name="owner",
             identity=config.identities["owner"],
         )
@@ -143,8 +140,62 @@ def test_login_identity_raises_when_login_response_is_not_json() -> None:
     with pytest.raises(IdentityLoginError, match="was not valid JSON"):
         login_identity(
             client=client,
-            login_path=config.auth.login_path,
-            token_field=config.auth.token_field,
+            auth_config=config.auth,
             name="owner",
             identity=config.identities["owner"],
         )
+
+
+def test_login_identity_supports_custom_login_body_and_nested_token_path() -> None:
+    config = build_config()
+    config.auth.login_body = {
+        "username": "{email}",
+        "secret": "{password}",
+        "metadata": {"role": "{role}", "tenant": "{tenant}"},
+    }
+    config.auth.token_path = "data.tokens.access"
+    config.identities["owner"].auth_values = {"tenant": "tenant-a"}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == "/session"
+        assert json.loads(request.content.decode()) == {
+            "username": "owner@example.test",
+            "secret": "owner-secret",
+            "metadata": {"role": "user", "tenant": "tenant-a"},
+        }
+        return httpx.Response(200, json={"data": {"tokens": {"access": "nested-token"}}})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler), base_url="http://testserver")
+
+    identity = login_identity(
+        client=client,
+        auth_config=config.auth,
+        name="owner",
+        identity=config.identities["owner"],
+    )
+
+    assert identity.access_token == "nested-token"
+    assert identity.authorization_header == {"Authorization": "Bearer nested-token"}
+
+
+def test_login_identity_supports_static_token_and_custom_auth_header() -> None:
+    config = build_config()
+    config.auth.auth_header_name = "X-API-Key"
+    config.auth.auth_scheme = ""
+    config.identities["owner"].access_token = "static-token"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("Static token identities should not call login endpoint")
+
+    client = httpx.Client(transport=httpx.MockTransport(handler), base_url="http://testserver")
+
+    identity = login_identity(
+        client=client,
+        auth_config=config.auth,
+        name="owner",
+        identity=config.identities["owner"],
+    )
+
+    assert identity.access_token == "static-token"
+    assert identity.authorization_header == {"X-API-Key": "static-token"}

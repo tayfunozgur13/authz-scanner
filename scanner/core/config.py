@@ -14,6 +14,16 @@ class TargetConfig(BaseModel):
 class AuthConfig(BaseModel):
     login_path: str
     token_field: str
+    login_method: str = "POST"
+    token_path: str | None = None
+    auth_header_name: str = "Authorization"
+    auth_scheme: str = "Bearer"
+    login_body: dict[str, Any] = Field(
+        default_factory=lambda: {
+            "email": "{email}",
+            "password": "{password}",
+        }
+    )
 
 
 class ProfileConfig(BaseModel):
@@ -25,6 +35,8 @@ class IdentityConfig(BaseModel):
     email: str
     password: str
     role: str
+    access_token: str | None = None
+    auth_values: dict[str, Any] = Field(default_factory=dict)
 
 
 class BolaResourceConfig(BaseModel):

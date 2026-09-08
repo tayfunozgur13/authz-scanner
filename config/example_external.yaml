@@ -5,6 +5,12 @@ target:
 auth:
   login_path: /session
   token_field: token
+  login_method: POST
+  auth_header_name: Authorization
+  auth_scheme: Bearer
+  login_body:
+    email: "{email}"
+    password: "{password}"
 
 profile:
   path: /me

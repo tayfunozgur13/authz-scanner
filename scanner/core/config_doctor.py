@@ -6,6 +6,7 @@ import httpx
 from pydantic import SecretStr
 
 from scanner.core.config import ScannerConfig
+from scanner.core.identity import build_auth_headers, get_value_by_path, render_login_body
 
 
 @dataclass
@@ -85,6 +86,8 @@ def _check_static_config(config: ScannerConfig, result: DoctorResult) -> None:
     _check_path(result, "Profile path", config.profile.path)
     _check_required_text(result, "Auth token field", config.auth.token_field)
     _check_required_text(result, "Profile id field", config.profile.id_field)
+    _check_method(result, "Auth login method", config.auth.login_method)
+    _check_required_text(result, "Auth header name", config.auth.auth_header_name)
     _check_identities(config, result)
     _check_bola_tests(config, result)
     _check_bfla_tests(config, result)
@@ -431,9 +434,15 @@ def _check_login(
 ) -> dict[str, str]:
     tokens: dict[str, str] = {}
     for name, identity in config.identities.items():
-        response = client.post(
+        if identity.access_token:
+            tokens[name] = identity.access_token
+            _add(result, f"Login '{name}'", "pass", "Static token configured; login request skipped.")
+            continue
+
+        response = client.request(
+            config.auth.login_method,
             config.auth.login_path,
-            json={"email": identity.email, "password": identity.password},
+            json=render_login_body(config.auth.login_body, name, identity),
         )
         if response.status_code != 200:
             _add(
@@ -449,7 +458,8 @@ def _check_login(
         except ValueError:
             _add(result, f"Login '{name}'", "fail", "Login response is not JSON.", "Return a JSON body containing the configured token field.")
             continue
-        token = body.get(config.auth.token_field) if isinstance(body, dict) else None
+        token_path = config.auth.token_path or config.auth.token_field
+        token = get_value_by_path(body, token_path)
         if isinstance(token, str) and token:
             tokens[name] = token
             _add(result, f"Login '{name}'", "pass", "Token found.")
@@ -458,8 +468,8 @@ def _check_login(
                 result,
                 f"Login '{name}'",
                 "fail",
-                f"Token field '{config.auth.token_field}' was not found.",
-                "Update auth.token_field or the login response mapping.",
+                f"Token path '{token_path}' was not found.",
+                "Update auth.token_field, auth.token_path, or the login response mapping.",
             )
     return tokens
 
@@ -471,7 +481,7 @@ def _check_profiles(
     tokens: dict[str, str],
 ) -> None:
     for name, token in tokens.items():
-        response = client.get(config.profile.path, headers=_auth_header(token))
+        response = client.get(config.profile.path, headers=build_auth_headers(config.auth, token))
         if response.status_code != 200:
             _add(result, f"Profile '{name}'", "fail", f"Profile returned {response.status_code}.", "Check profile.path and bearer token handling.")
             continue
@@ -509,6 +519,7 @@ def _check_resource_lists(
                 client,
                 result,
                 f"BOLA resource '{test.name}'",
+                config,
                 tokens[identity_name],
                 test.resource.list_method,
                 test.resource.list_path,
@@ -531,6 +542,7 @@ def _check_resource_lists(
                 client,
                 result,
                 f"BFLA resource '{test.name}'",
+                config,
                 tokens[identity_name],
                 test.resource.list_method,
                 test.resource.list_path,
@@ -553,6 +565,7 @@ def _check_resource_lists(
                 client,
                 result,
                 f"Property resource '{test.name}'",
+                config,
                 tokens[identity_name],
                 test.resource.list_method,
                 test.resource.list_path,
@@ -565,6 +578,7 @@ def _check_resource_list(
     client: httpx.Client,
     result: DoctorResult,
     name: str,
+    config: ScannerConfig,
     token: str,
     method: str,
     path: str,
@@ -574,7 +588,7 @@ def _check_resource_list(
     if method.upper() != "GET":
         _add(result, name, "warn", f"Skipped live list check for {method.upper()} {path}.", "Use GET list endpoints when possible so doctor can verify resource fields safely.")
         return
-    response = client.get(path, headers=_auth_header(token))
+    response = client.get(path, headers=build_auth_headers(config.auth, token))
     if response.status_code != 200:
         _add(result, name, "fail", f"Resource list returned {response.status_code}.", "Check the list path and whether the selected identity has access to its own resources.")
         return
@@ -612,6 +626,3 @@ def _first_identity_name_for_role(config: ScannerConfig, role: str) -> str | Non
             return name
     return None
 
-
-def _auth_header(token: str) -> dict[str, str]:
-    return {"Authorization": f"Bearer {token}"}

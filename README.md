@@ -640,6 +640,7 @@ Testing another REST API primarily requires a new configuration file containing 
 - authentication endpoint
 - authentication request
 - token extraction path
+- authentication header format
 - profile endpoint
 - test identities
 - BOLA rules
@@ -680,17 +681,26 @@ target:
   base_url: "http://localhost:8000"
 
 auth:
-  login_endpoint: "/login"
+  login_path: "/login"
+  login_method: "POST"
   token_field: "access_token"
+  token_path: "data.access_token"
+  auth_header_name: "Authorization"
+  auth_scheme: "Bearer"
+  login_body:
+    username: "{email}"
+    password: "{password}"
 
 identities:
   user_a:
-    username: "userA@example.com"
+    email: "userA@example.com"
     password: "password"
+    role: "user"
 
   user_b:
-    username: "userB@example.com"
+    email: "userB@example.com"
     password: "password"
+    role: "user"
 ```
 
 Target-specific authorization rules can then be defined without changing the scanner engine.

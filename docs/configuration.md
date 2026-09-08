@@ -52,11 +52,18 @@ target:
 auth:
   login_path: /session
   token_field: token
+  login_method: POST
+  token_path: data.access.token
+  auth_header_name: Authorization
+  auth_scheme: Bearer
+  login_body:
+    username: "{email}"
+    password: "{password}"
 ```
 
-Scanner her identity icin `login_path` endpointine email/password gonderir. Cevap JSON icinde `token_field` ile belirtilen alandan bearer token okunur.
+Scanner her identity icin `login_path` endpointine login istegi gonderir. Varsayilan davranis eski haliyle uyumludur: `POST` istegiyle `email` ve `password` gonderilir, cevap JSON icinde `token_field` alanindan bearer token okunur.
 
-Beklenen login request:
+Basit login request varsayilani:
 
 ```json
 {
@@ -64,6 +71,49 @@ Beklenen login request:
   "password": "secret"
 }
 ```
+
+Gercek API farkli body veya token formati kullaniyorsa `login_body` ve `token_path` kullanilabilir:
+
+```yaml
+auth:
+  login_path: /session
+  token_field: access_token
+  token_path: data.tokens.access
+  login_body:
+    username: "{email}"
+    secret: "{password}"
+    tenant: "{tenant}"
+
+identities:
+  owner:
+    email: owner@example.test
+    password: owner-secret
+    role: user
+    auth_values:
+      tenant: tenant-a
+```
+
+`token_path`, nested JSON icinden token okumak icindir. Ornegin `data.tokens.access` su response icinden `abc123` degerini okur:
+
+```json
+{
+  "data": {
+    "tokens": {
+      "access": "abc123"
+    }
+  }
+}
+```
+
+Farkli header yapilari icin:
+
+```yaml
+auth:
+  auth_header_name: X-API-Key
+  auth_scheme: ""
+```
+
+Bu durumda scanner `X-API-Key: <token>` header'i gonderir. `auth_scheme: Bearer` kullanilirsa `Authorization: Bearer <token>` formati uretilir.
 
 ## Profile
 
@@ -83,6 +133,7 @@ identities:
     email: owner@example.test
     password: owner-secret
     role: user
+    access_token: static-token-if-login-is-not-needed
   attacker:
     email: attacker@example.test
     password: attacker-secret
@@ -94,6 +145,8 @@ identities:
 ```
 
 Identity anahtar isimleri serbesttir. Scanner sabit olarak `userA` veya `admin1` beklemez. Test modulleri role alanina gore uygun identity secer.
+
+`access_token` verilirse scanner o identity icin login endpointini cagirmadan dogrudan bu token'i kullanir. Bu, disaridan alinmis tokenlarla veya API key tabanli testlerde kullanislidir.
 
 ## BOLA Tests
 
