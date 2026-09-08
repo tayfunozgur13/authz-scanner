@@ -716,6 +716,21 @@ auth:
   cookie_name: "session_id"
 ```
 
+For APIs that issue refresh tokens, configure the refresh endpoint:
+
+```yaml
+auth:
+  login_path: "/session"
+  token_field: "access_token"
+  refresh_path: "/session/refresh"
+  refresh_token_field: "refresh_token"
+  refresh_on_status_codes: [401]
+  refresh_body:
+    refresh_token: "{refresh_token}"
+```
+
+When a configured request receives `401`, the scanner refreshes that identity's access token and retries the same request once.
+
 ---
 
 ## Security and Ethical Use

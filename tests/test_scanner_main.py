@@ -364,6 +364,19 @@ def test_config_doctor_requires_cookie_name_for_cookie_auth() -> None:
     assert any(check.name == "Auth cookie name" and check.status == "fail" for check in result.checks)
 
 
+def test_config_doctor_requires_refresh_token_field_when_refresh_path_is_configured() -> None:
+    config = build_config()
+    config.auth.refresh_path = "/session/refresh"
+
+    result = run_config_doctor(config, live=False)
+
+    assert result.has_failures is True
+    assert any(
+        check.name == "Auth refresh token field" and check.status == "fail"
+        for check in result.checks
+    )
+
+
 def test_run_cli_config_doctor_subcommand_checks_live_target(tmp_path, monkeypatch, capsys) -> None:
     config_path = tmp_path / "scanner.yaml"
     config_path.write_text(

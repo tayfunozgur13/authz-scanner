@@ -55,12 +55,19 @@ auth:
   login_method: POST
   credential_location: header
   token_path: data.access.token
+  refresh_path: /session/refresh
+  refresh_method: POST
+  refresh_token_field: refresh_token
+  refresh_token_path: data.refresh.token
+  refresh_on_status_codes: [401]
   auth_header_name: Authorization
   auth_scheme: Bearer
   cookie_name: null
   login_body:
     username: "{email}"
     password: "{password}"
+  refresh_body:
+    refresh_token: "{refresh_token}"
 ```
 
 Scanner her identity icin `login_path` endpointine login istegi gonderir. Varsayilan davranis eski haliyle uyumludur: `POST` istegiyle `email` ve `password` gonderilir, cevap JSON icinde `token_field` alanindan bearer token okunur.
@@ -134,6 +141,30 @@ Cookie: session_id=<identity-session-token>
 ```
 
 Bu ayrim onemlidir; iki farkli identity ayni HTTP client icinde login olsa bile scanner requestleri identity'ye ait cookie ile gonderir.
+
+Refresh token kullanan API'ler icin:
+
+```yaml
+auth:
+  login_path: /session
+  token_field: access_token
+  refresh_path: /session/refresh
+  refresh_token_field: refresh_token
+  refresh_on_status_codes: [401]
+  refresh_body:
+    refresh_token: "{refresh_token}"
+```
+
+Bu modda scanner login response icinden hem `access_token` hem de `refresh_token` okur. Scan sirasinda bir request `401` donerse scanner refresh endpointini cagirir, yeni access token'i identity uzerinde gunceller ve ayni requesti bir kez daha dener.
+
+Nested refresh token response yapilari icin `refresh_token_path` kullanilabilir:
+
+```yaml
+auth:
+  refresh_token_path: data.tokens.refresh
+```
+
+Refresh token destegi opsiyoneldir. `refresh_path` verilmezse scanner mevcut davranisi korur ve token yenilemeye calismaz.
 
 ## Profile
 

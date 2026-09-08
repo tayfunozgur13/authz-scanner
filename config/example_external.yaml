@@ -7,12 +7,20 @@ auth:
   token_field: token
   login_method: POST
   credential_location: header
+  refresh_path: null
+  refresh_method: POST
+  refresh_token_field: null
+  refresh_token_path: null
+  refresh_on_status_codes:
+    - 401
   auth_header_name: Authorization
   auth_scheme: Bearer
   cookie_name: null
   login_body:
     email: "{email}"
     password: "{password}"
+  refresh_body:
+    refresh_token: "{refresh_token}"
 
 profile:
   path: /me

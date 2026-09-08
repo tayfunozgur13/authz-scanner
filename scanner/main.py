@@ -54,7 +54,7 @@ class ScannerRunResult(SmokeScanResult):
 def run_scan(config: ScannerConfig) -> ScannerRunResult:
     with httpx.Client(base_url=config.target.base_url, timeout=10.0) as client:
         identities = login_all_identities(client, config)
-        executor = HttpExecutor(client)
+        executor = HttpExecutor(client, auth_config=config.auth)
         health_response = client.get("/health")
         openapi_response = client.get("/openapi.json")
         findings = run_bola_tests(

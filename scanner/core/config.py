@@ -17,6 +17,11 @@ class AuthConfig(BaseModel):
     login_method: str = "POST"
     credential_location: str = "header"
     token_path: str | None = None
+    refresh_path: str | None = None
+    refresh_method: str = "POST"
+    refresh_token_field: str | None = None
+    refresh_token_path: str | None = None
+    refresh_on_status_codes: list[int] = Field(default_factory=lambda: [401])
     auth_header_name: str = "Authorization"
     auth_scheme: str = "Bearer"
     cookie_name: str | None = None
@@ -24,6 +29,11 @@ class AuthConfig(BaseModel):
         default_factory=lambda: {
             "email": "{email}",
             "password": "{password}",
+        }
+    )
+    refresh_body: dict[str, Any] = Field(
+        default_factory=lambda: {
+            "refresh_token": "{refresh_token}",
         }
     )
 
@@ -38,6 +48,7 @@ class IdentityConfig(BaseModel):
     password: str
     role: str
     access_token: str | None = None
+    refresh_token: str | None = None
     auth_values: dict[str, Any] = Field(default_factory=dict)
 
 

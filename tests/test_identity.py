@@ -16,7 +16,12 @@ from scanner.core.config import (
     ScannerConfig,
     TargetConfig,
 )
-from scanner.core.identity import IdentityLoginError, login_all_identities, login_identity
+from scanner.core.identity import (
+    IdentityLoginError,
+    login_all_identities,
+    login_identity,
+    refresh_authenticated_identity,
+)
 
 
 def build_config() -> ScannerConfig:
@@ -177,6 +182,74 @@ def test_login_identity_supports_custom_login_body_and_nested_token_path() -> No
 
     assert identity.access_token == "nested-token"
     assert identity.authorization_header == {"Authorization": "Bearer nested-token"}
+
+
+def test_login_identity_extracts_refresh_token() -> None:
+    config = build_config()
+    config.auth.refresh_token_field = "refresh_token"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "token": "access-token",
+                "refresh_token": "refresh-token",
+            },
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler), base_url="http://testserver")
+
+    identity = login_identity(
+        client=client,
+        auth_config=config.auth,
+        name="owner",
+        identity=config.identities["owner"],
+    )
+
+    assert identity.access_token == "access-token"
+    assert identity.refresh_token == "refresh-token"
+
+
+def test_refresh_authenticated_identity_updates_access_token() -> None:
+    config = build_config()
+    config.auth.refresh_path = "/session/refresh"
+    config.auth.refresh_token_field = "refresh_token"
+
+    calls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request.url.path)
+        assert request.url.path == "/session/refresh"
+        assert json.loads(request.content.decode()) == {"refresh_token": "old-refresh"}
+        return httpx.Response(
+            200,
+            json={
+                "token": "new-access",
+                "refresh_token": "new-refresh",
+            },
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler), base_url="http://testserver")
+    identity = login_identity(
+        client=client,
+        auth_config=config.auth,
+        name="owner",
+        identity=IdentityConfig(
+            email="owner@example.test",
+            password="owner-secret",
+            role="user",
+            access_token="old-access",
+            refresh_token="old-refresh",
+        ),
+    )
+
+    refreshed = refresh_authenticated_identity(client, config.auth, identity)
+
+    assert refreshed is True
+    assert calls == ["/session/refresh"]
+    assert identity.access_token == "new-access"
+    assert identity.refresh_token == "new-refresh"
+    assert identity.authorization_header == {"Authorization": "Bearer new-access"}
 
 
 def test_login_identity_supports_static_token_and_custom_auth_header() -> None:

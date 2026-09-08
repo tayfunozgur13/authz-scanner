@@ -3,6 +3,7 @@ import json
 import httpx
 
 from scanner.core.executor import HttpExecutor
+from scanner.core.config import AuthConfig
 from scanner.core.identity import AuthenticatedIdentity
 
 
@@ -66,6 +67,53 @@ def test_executor_sends_identity_cookies() -> None:
     result = executor.request(identity=identity, method="GET", path="/resources")
 
     assert result.status_code == 200
+
+
+def test_executor_refreshes_token_once_after_unauthorized_response() -> None:
+    identity = AuthenticatedIdentity(
+        name="owner",
+        email="owner@example.test",
+        role="user",
+        access_token="expired-access",
+        refresh_token="refresh-token",
+    )
+    auth_config = AuthConfig(
+        login_path="/session",
+        token_field="token",
+        refresh_path="/session/refresh",
+        refresh_token_field="refresh_token",
+    )
+    seen_authorization_headers: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/session/refresh":
+            assert json.loads(request.content.decode()) == {"refresh_token": "refresh-token"}
+            return httpx.Response(
+                200,
+                json={
+                    "token": "fresh-access",
+                    "refresh_token": "new-refresh-token",
+                },
+            )
+
+        seen_authorization_headers.append(request.headers["authorization"])
+        if request.headers["authorization"] == "Bearer expired-access":
+            return httpx.Response(401, json={"detail": "Token expired"})
+        return httpx.Response(200, json={"ok": True})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler), base_url="http://testserver")
+    executor = HttpExecutor(client, auth_config=auth_config)
+
+    result = executor.request(identity=identity, method="GET", path="/resources")
+
+    assert result.status_code == 200
+    assert result.response_json == {"ok": True}
+    assert seen_authorization_headers == [
+        "Bearer expired-access",
+        "Bearer fresh-access",
+    ]
+    assert identity.access_token == "fresh-access"
+    assert identity.refresh_token == "new-refresh-token"
 
 
 def test_executor_stores_text_response_when_body_is_not_json() -> None:

@@ -93,6 +93,7 @@ def _check_static_config(config: ScannerConfig, result: DoctorResult) -> None:
     _check_required_text(result, "Profile id field", config.profile.id_field)
     _check_method(result, "Auth login method", config.auth.login_method)
     _check_credential_location(config, result)
+    _check_refresh_config(config, result)
     _check_required_text(result, "Auth header name", config.auth.auth_header_name)
     _check_identities(config, result)
     _check_bola_tests(config, result)
@@ -150,6 +151,41 @@ def _check_credential_location(config: ScannerConfig, result: DoctorResult) -> N
             "Cookie auth is enabled but auth.cookie_name is empty.",
             "Set auth.cookie_name to the session cookie name returned by the API.",
         )
+
+
+def _check_refresh_config(config: ScannerConfig, result: DoctorResult) -> None:
+    if not config.auth.refresh_path:
+        return
+
+    _check_path(result, "Auth refresh path", config.auth.refresh_path)
+    _check_method(result, "Auth refresh method", config.auth.refresh_method)
+    if config.auth.refresh_token_field or config.auth.refresh_token_path:
+        _add(
+            result,
+            "Auth refresh token field",
+            "pass",
+            config.auth.refresh_token_path or config.auth.refresh_token_field or "",
+        )
+    else:
+        _add(
+            result,
+            "Auth refresh token field",
+            "fail",
+            "Refresh path is configured but refresh token field/path is empty.",
+            "Set auth.refresh_token_field or auth.refresh_token_path so the scanner can store the refresh token from login.",
+        )
+
+    for status_code in config.auth.refresh_on_status_codes:
+        if 100 <= status_code <= 599:
+            _add(result, "Auth refresh trigger status", "pass", str(status_code))
+        else:
+            _add(
+                result,
+                "Auth refresh trigger status",
+                "fail",
+                f"Invalid HTTP status code: {status_code}",
+                "Use status codes between 100 and 599.",
+            )
 
 
 def _check_expected_status(result: DoctorResult, name: str, expected_status: int) -> None:
