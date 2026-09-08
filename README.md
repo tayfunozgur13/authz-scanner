@@ -323,6 +323,20 @@ It does not blindly decide final authorization rules. Generated tests include:
 
 The pentester should review and complete these fields before running the generated config against a real target.
 
+### Starter Config Review Checklist
+
+Before using an OpenAPI-generated starter config against a real API:
+
+- Replace placeholder identities with authorized test accounts.
+- Confirm the login endpoint and token response field.
+- Confirm the profile endpoint and user identifier field.
+- Confirm ownership fields used by object-level authorization tests.
+- Complete request bodies for non-GET endpoints when required.
+- Make mass assignment payloads valid for the target API.
+- Customize business impact statements for the application's real business context.
+- Review extra generated candidates before keeping or removing them.
+- Keep `review_required: true` until the test has been manually validated.
+
 For the included vulnerable demo API, the current OpenAPI-generated starter config matches all manually defined BOLA and BFLA candidates, and adds one extra property authorization candidate for manual review.
 
 ---

@@ -282,6 +282,50 @@ Bu yaklasim su nedenle kullanilir:
 
 Bu yuzden generator hizli bir baslangic dosyasi verir; pentester `TODO_*`, `review_required` ve `review_notes` alanlarini kontrol ederek dosyayi calistirilabilir hale getirir.
 
+### Starter Config Review Checklist
+
+OpenAPI'den uretilen config baska bir API'ye uyarlanirken su kontroller yapilmalidir:
+
+1. `identities` alanindaki placeholder hesaplari yetkili test hesaplariyla degistir.
+
+   Scanner authorization davranisini karsilastirmak icin birden fazla kimlige ihtiyac duyar. En az iki ayni role sahip hesap ve gerekiyorsa bir privileged hesap tanimlanmalidir.
+
+2. `auth.login_path` ve `auth.token_field` alanlarini dogrula.
+
+   OpenAPI login endpointini ve token alanini tahmin edebilir, fakat gercek response yapisi `access_token`, `token`, `data.token` veya baska bir formatta olabilir.
+
+3. `profile.path` ve `profile.id_field` alanlarini dogrula.
+
+   BOLA ve privilege escalation testleri login olan kullanicinin subject id bilgisini kullanir. Bu id alaninin response body icindeki gercek alanla eslesmesi gerekir.
+
+4. BOLA testlerindeki `owner_field` degerlerini gercek response body'ye gore kontrol et.
+
+   Ownership alani her API'de ayni degildir. `owner_id`, `user_id`, `customer_id`, `account_id`, `tenant_id` veya domain'e ozel baska bir alan olabilir.
+
+5. Resource `id_field` degerlerini dogrula.
+
+   Scanner saldiri endpointine yerlestirecegi kaynak id'sini list response icinden okur. Bu alan `id`, `uuid`, `resource_id` veya API'ye ozel baska bir alan olabilir.
+
+6. Non-GET endpointlerde gerekli `json_body` alanlarini tamamla.
+
+   OpenAPI endpointi ve riskli alanlari gosterebilir, fakat calisabilir bir PUT/PATCH/POST istegi icin gerekli tum alanlari her zaman guvenli sekilde tamamlayamaz.
+
+7. Mass assignment payloadlarini hedef API'nin kabul edecegi valid body formatina getir.
+
+   Generator riskli alanlari aday olarak secer. Pentester bu alanlari endpointin normal request formatiyla birlestirerek gercekci payloadlar hazirlamalidir.
+
+8. Business impact metinlerini uygulamanin gercek is baglamina gore ozellestir.
+
+   Otomatik impact metinleri baslangic icindir. Kaliteli pentest raporunda finansal kayip, veri gizliligi, operasyonel etki veya yetki genislemesi gibi API'ye ozel etkiler yazilmalidir.
+
+9. Ekstra generated adaylari tutup tutmayacagina karar ver.
+
+   OpenAPI generator bazen manuel config'te olmayan ama test edilmeye deger endpointler onerebilir. Bunlar silinmeden once gercek risk acisindan incelenmelidir.
+
+10. Manuel inceleme bitene kadar `review_required: true` alanini koru.
+
+    Test dogrulandiktan sonra bu alan `false` yapilabilir veya inceleme izi olarak config icinde birakilabilir.
+
 Demo vulnerable API icin uretilen ornek dosya:
 
 ```text
