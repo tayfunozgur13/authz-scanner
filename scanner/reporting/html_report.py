@@ -36,6 +36,15 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
     class_counts = count_findings_by_class(result)
     severity_counts = count_findings_by_severity(result)
     max_risk_score = max((finding.risk_score for finding in result.findings), default=0)
+    skipped_rows = "\n".join(
+        "<tr>"
+        f"<td>{escape_html(skipped_test.module)}</td>"
+        f"<td>{escape_html(skipped_test.name)}</td>"
+        f"<td>{escape_html(skipped_test.reason)}</td>"
+        f"<td>{'yes' if skipped_test.reset_recommended else 'no'}</td>"
+        "</tr>"
+        for skipped_test in result.skipped_tests
+    )
     findings_rows = "\n".join(
         "<tr>"
         f"<td>{index}</td>"
@@ -114,6 +123,8 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
             "<dl class=\"finding-meta\">"
             f"<dt>Severity</dt><dd>{escape_html(finding.severity.value)}</dd>"
             f"<dt>Risk Score</dt><dd>{finding.risk_score}</dd>"
+            f"<dt>Destructive Test</dt><dd>{'yes' if finding.destructive else 'no'}</dd>"
+            f"<dt>Reset Recommended</dt><dd>{'yes' if finding.reset_recommended else 'no'}</dd>"
             f"<dt>Class</dt><dd>{escape_html(finding.vulnerability_class.value)}</dd>"
             f"<dt>OWASP API Category</dt><dd>{escape_html(get_owasp_api_category(finding.vulnerability_class.value))}</dd>"
             f"<dt>Endpoint</dt><dd><code>{escape_html(finding.method)} {escape_html(finding.endpoint)}</code></dd>"
@@ -254,7 +265,7 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
     li {{ margin-bottom: 8px; }}
     .summary-grid {{
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 12px;
       margin-top: 24px;
     }}
@@ -333,6 +344,7 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
       <div class="summary-grid">
 	        <div class="metric"><span>Generated At</span><strong>{escape_html(timestamp.isoformat())}</strong></div>
 	        <div class="metric"><span>Total Findings</span><strong>{result.finding_count}</strong></div>
+	        <div class="metric"><span>Skipped Tests</span><strong>{len(result.skipped_tests)}</strong></div>
 	        <div class="metric"><span>Highest Risk</span><strong>{max_risk_score}</strong></div>
 	        <div class="metric"><span>OpenAPI</span><strong>{escape_html(format_check(result.openapi_ok))}</strong></div>
       </div>
@@ -354,6 +366,15 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
       <table>
         <thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead>
         <tbody>{identities_rows}</tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Skipped Tests</h2>
+      <p>Tests marked destructive are skipped by default unless the scan is run with <code>--include-destructive</code>.</p>
+      <table>
+        <thead><tr><th>Module</th><th>Name</th><th>Reason</th><th>Reset Recommended</th></tr></thead>
+        <tbody>{skipped_rows}</tbody>
       </table>
     </section>
 

@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 from scanner.core.evidence import HttpEvidence
+from scanner.core.destructive import SkippedTest
 from scanner.core.finding import Finding, Severity, VulnerabilityClass
 from scanner.core.identity import AuthenticatedIdentity
 from scanner.core.result import HttpRequestResult
@@ -32,6 +33,15 @@ def build_result(findings: list[Finding] | None = None) -> ScannerRunResult:
         openapi_status_code=200,
         openapi_title="External API",
         findings=findings or [],
+        skipped_tests=[
+            SkippedTest(
+                module="bfla",
+                name="refund_order",
+                reason="destructive test skipped by default",
+                destructive=True,
+                reset_recommended=True,
+            )
+        ],
     )
 
 
@@ -141,12 +151,16 @@ def test_build_markdown_report_includes_summary_findings_and_evidence() -> None:
     assert "# AuthZ Scanner Report" in report
     assert "- Target: `External API`" in report
     assert "- Total Findings: `1`" in report
+    assert "- Skipped Tests: `1`" in report
+    assert "## Skipped Tests" in report
+    assert "| bfla | refund_order | destructive test skipped by default | yes |" in report
     assert "### Findings by Class" in report
     assert "| BOLA | 1 |" in report
     assert "### Findings Table" in report
     assert "| 1 | high | 80 | BOLA | GET | `/resources/{id}` | regular |" in report
     assert "### 1. BOLA: same_role_users_cannot_read_each_others_resources" in report
     assert "- OWASP API Category: `API1: Broken Object Level Authorization`" in report
+    assert "- Destructive Test: `no`" in report
     assert "#### Overview" in report
     assert "#### Impact" in report
     assert "An attacker may access or modify resources owned by another user" in report

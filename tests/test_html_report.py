@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 from scanner.core.evidence import HttpEvidence
+from scanner.core.destructive import SkippedTest
 from scanner.core.finding import Finding, Severity, VulnerabilityClass
 from scanner.core.identity import AuthenticatedIdentity
 from scanner.core.result import HttpRequestResult
@@ -24,6 +25,15 @@ def build_result(findings: list[Finding] | None = None) -> ScannerRunResult:
         openapi_status_code=200,
         openapi_title="External API",
         findings=findings or [],
+        skipped_tests=[
+            SkippedTest(
+                module="bfla",
+                name="refund_order",
+                reason="destructive test skipped by default",
+                destructive=True,
+                reset_recommended=True,
+            )
+        ],
     )
 
 
@@ -76,6 +86,8 @@ def test_build_html_report_includes_summary_findings_and_redacted_evidence() -> 
     assert "<strong>External API</strong>" in report
     assert "<strong>1</strong>" in report
     assert "<dt>Risk Score</dt><dd>80</dd>" in report
+    assert "<dt>Destructive Test</dt><dd>no</dd>" in report
+    assert "refund_order" in report
     assert "BOLA: same_role_users_cannot_read_each_others_resources" in report
     assert "API1: Broken Object Level Authorization" in report
     assert "Business Impact" in report

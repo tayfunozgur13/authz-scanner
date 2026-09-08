@@ -77,6 +77,8 @@ class BolaTestConfig(BaseModel):
     severity: Severity | None = None
     risk_score: int | None = Field(default=None, ge=0, le=100)
     business_impact: str | None = None
+    destructive: bool = False
+    reset_recommended: bool = False
     review_required: bool = False
     review_notes: list[str] = Field(default_factory=list)
 
@@ -107,6 +109,8 @@ class BflaTestConfig(BaseModel):
     severity: Severity | None = None
     risk_score: int | None = Field(default=None, ge=0, le=100)
     business_impact: str | None = None
+    destructive: bool = False
+    reset_recommended: bool = False
     review_required: bool = False
     review_notes: list[str] = Field(default_factory=list)
 
@@ -136,6 +140,8 @@ class PropertyPayloadConfig(BaseModel):
     severity: Severity | None = None
     risk_score: int | None = Field(default=None, ge=0, le=100)
     business_impact: str | None = None
+    destructive: bool = False
+    reset_recommended: bool = False
     review_required: bool = False
     review_notes: list[str] = Field(default_factory=list)
 
@@ -151,6 +157,8 @@ class PropertyAuthTestConfig(BaseModel):
     severity: Severity | None = None
     risk_score: int | None = Field(default=None, ge=0, le=100)
     business_impact: str | None = None
+    destructive: bool = False
+    reset_recommended: bool = False
     review_required: bool = False
     review_notes: list[str] = Field(default_factory=list)
 

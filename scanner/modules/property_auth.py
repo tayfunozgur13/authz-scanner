@@ -148,6 +148,8 @@ def build_property_finding(
     recommendation: str,
     severity_override: Any = None,
     risk_score_override: int | None = None,
+    destructive: bool = False,
+    reset_recommended: bool = False,
 ) -> Finding:
     severity, risk_score = resolve_risk(
         vulnerability_class=vulnerability_class,
@@ -167,6 +169,8 @@ def build_property_finding(
         description=description,
         business_impact=business_impact,
         recommendation=recommendation,
+        destructive=destructive,
+        reset_recommended=reset_recommended,
         evidence=[evidence],
     )
 
@@ -217,6 +221,8 @@ def run_excessive_data_exposure_test(
             recommendation="Return explicit response DTOs or allowlists that exclude sensitive fields.",
             severity_override=test_config.severity,
             risk_score_override=test_config.risk_score,
+            destructive=test_config.destructive,
+            reset_recommended=test_config.reset_recommended,
         )
     ]
 
@@ -306,6 +312,8 @@ def run_payload_effect_test(
             recommendation=recommendation,
             severity_override=payload.severity or test_config.severity,
             risk_score_override=payload.risk_score or test_config.risk_score,
+            destructive=payload.destructive or test_config.destructive,
+            reset_recommended=payload.reset_recommended or test_config.reset_recommended,
         )
     ]
 

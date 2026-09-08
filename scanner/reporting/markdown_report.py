@@ -98,6 +98,7 @@ def build_markdown_report(result: Any, generated_at: datetime | None = None) -> 
         f"- Base URL: `{result.base_url}`",
         f"- Generated At: `{timestamp.isoformat()}`",
         f"- Total Findings: `{result.finding_count}`",
+        f"- Skipped Tests: `{len(result.skipped_tests)}`",
         f"- Highest Risk Score: `{max((finding.risk_score for finding in result.findings), default=0)}`",
         "",
         "## Scan Metadata",
@@ -123,6 +124,27 @@ def build_markdown_report(result: Any, generated_at: datetime | None = None) -> 
             f"{escape_table_cell(identity.email)} | "
             f"{escape_table_cell(identity.role)} |"
         )
+
+    if result.skipped_tests:
+        lines.extend(
+            [
+                "",
+                "## Skipped Tests",
+                "",
+                "These tests were not executed because they are marked destructive.",
+                "",
+                "| Module | Name | Reason | Reset Recommended |",
+                "|---|---|---|---|",
+            ]
+        )
+        for skipped_test in result.skipped_tests:
+            lines.append(
+                "| "
+                f"{escape_table_cell(skipped_test.module)} | "
+                f"{escape_table_cell(skipped_test.name)} | "
+                f"{escape_table_cell(skipped_test.reason)} | "
+                f"{'yes' if skipped_test.reset_recommended else 'no'} |"
+            )
 
     lines.extend(
         [
@@ -187,6 +209,8 @@ def build_markdown_report(result: Any, generated_at: datetime | None = None) -> 
                 "",
                 f"- Severity: `{finding.severity.value}`",
                 f"- Risk Score: `{finding.risk_score}`",
+                f"- Destructive Test: `{'yes' if finding.destructive else 'no'}`",
+                f"- Reset Recommended: `{'yes' if finding.reset_recommended else 'no'}`",
                 f"- Class: `{finding.vulnerability_class.value}`",
                 f"- OWASP API Category: `{get_owasp_api_category(finding.vulnerability_class.value)}`",
                 f"- Endpoint: `{finding.method} {finding.endpoint}`",

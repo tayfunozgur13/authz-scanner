@@ -31,6 +31,8 @@ class Finding(BaseModel):
     description: str
     business_impact: str
     recommendation: str
+    destructive: bool = False
+    reset_recommended: bool = False
     evidence: list[HttpEvidence]
 
     @property

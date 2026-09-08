@@ -4,12 +4,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from rich.console import Console
 from rich.table import Table
 
 from scanner.core.config import ScannerConfig, load_config
 from scanner.core.config_doctor import DoctorResult, run_config_doctor
+from scanner.core.destructive import SkippedTest, filter_destructive_tests
 from scanner.core.executor import HttpExecutor
 from scanner.core.finding import Finding
 from scanner.core.identity import AuthenticatedIdentity, IdentityLoginError, login_all_identities
@@ -45,13 +46,18 @@ class SmokeScanResult(BaseModel):
 
 class ScannerRunResult(SmokeScanResult):
     findings: list[Finding]
+    skipped_tests: list[SkippedTest] = Field(default_factory=list)
 
     @property
     def finding_count(self) -> int:
         return len(self.findings)
 
 
-def run_scan(config: ScannerConfig) -> ScannerRunResult:
+def run_scan(config: ScannerConfig, include_destructive: bool = False) -> ScannerRunResult:
+    scan_config, skipped_tests = filter_destructive_tests(
+        config,
+        include_destructive=include_destructive,
+    )
     with httpx.Client(base_url=config.target.base_url, timeout=10.0) as client:
         identities = login_all_identities(client, config)
         executor = HttpExecutor(client, auth_config=config.auth)
@@ -59,20 +65,20 @@ def run_scan(config: ScannerConfig) -> ScannerRunResult:
         openapi_response = client.get("/openapi.json")
         findings = run_bola_tests(
             executor=executor,
-            config=config,
+            config=scan_config,
             identities=identities,
         )
         findings.extend(
             run_bfla_tests(
                 executor=executor,
-                config=config,
+                config=scan_config,
                 identities=identities,
             )
         )
         findings.extend(
             run_property_auth_tests(
                 executor=executor,
-                config=config,
+                config=scan_config,
                 identities=identities,
             )
         )
@@ -98,6 +104,7 @@ def run_scan(config: ScannerConfig) -> ScannerRunResult:
         openapi_status_code=openapi_response.status_code,
         openapi_title=openapi_title,
         findings=findings,
+        skipped_tests=skipped_tests,
     )
 
 
@@ -121,6 +128,11 @@ def print_scan_result(result: ScannerRunResult) -> None:
         result.openapi_title or str(result.openapi_status_code),
     )
     table.add_row("Findings", str(result.finding_count), "BOLA, BFLA, and property checks completed")
+    table.add_row(
+        "Skipped",
+        str(len(result.skipped_tests)),
+        "Destructive tests skipped by default",
+    )
     console.print(table)
 
     if result.findings:
@@ -145,6 +157,23 @@ def print_scan_result(result: ScannerRunResult) -> None:
             )
 
         console.print(findings_table)
+
+    if result.skipped_tests:
+        skipped_table = Table(title="Skipped Tests")
+        skipped_table.add_column("Module")
+        skipped_table.add_column("Name")
+        skipped_table.add_column("Reason")
+        skipped_table.add_column("Reset")
+
+        for skipped_test in result.skipped_tests:
+            skipped_table.add_row(
+                skipped_test.module,
+                skipped_test.name,
+                skipped_test.reason,
+                "recommended" if skipped_test.reset_recommended else "",
+            )
+
+        console.print(skipped_table)
 
 
 def print_smoke_result(result: SmokeScanResult) -> None:
@@ -191,6 +220,7 @@ def print_comparison_result(results: list[ScannerRunResult]) -> None:
     table.add_column("Health")
     table.add_column("OpenAPI")
     table.add_column("Findings")
+    table.add_column("Skipped")
 
     for result in results:
         table.add_row(
@@ -199,6 +229,7 @@ def print_comparison_result(results: list[ScannerRunResult]) -> None:
             "ok" if result.health_ok else str(result.health_status_code),
             "ok" if result.openapi_ok else str(result.openapi_status_code),
             str(result.finding_count),
+            str(len(result.skipped_tests)),
         )
 
     console.print(table)
@@ -245,6 +276,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         args.compare_config = None
         args.report_format = "none"
         args.report_dir = Path("reports")
+        args.include_destructive = False
         return args
 
     parser = argparse.ArgumentParser(description="AuthZ Scanner")
@@ -283,6 +315,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="With --doctor, run static config validation only.",
     )
+    parser.add_argument(
+        "--include-destructive",
+        action="store_true",
+        help="Run tests marked destructive. By default destructive tests are skipped.",
+    )
     return parser.parse_args(argv)
 
 
@@ -307,14 +344,17 @@ def run_cli(argv: list[str] | None = None) -> int:
                 doctor_result = run_config_doctor(config, live=not args.offline)
                 print_doctor_result(doctor_result)
                 return 1 if doctor_result.has_failures else 0
-            result = run_scan(config)
+            result = run_scan(config, include_destructive=args.include_destructive)
             print_scan_result(result)
             results = [result]
         else:
             if args.doctor:
                 raise ScannerCliError("--doctor can only be used with --config")
             results = [
-                run_scan(load_scanner_config(config_path))
+                run_scan(
+                    load_scanner_config(config_path),
+                    include_destructive=args.include_destructive,
+                )
                 for config_path in args.compare_config
             ]
             print_comparison_result(results)

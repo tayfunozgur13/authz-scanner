@@ -72,14 +72,27 @@ def build_json_report(result: Any, generated_at: datetime | None = None) -> dict
         ],
         "summary": {
             "finding_count": result.finding_count,
+            "skipped_test_count": len(result.skipped_tests),
             "max_risk_score": max((finding.risk_score for finding in result.findings), default=0),
         },
+        "skipped_tests": [
+            {
+                "module": skipped_test.module,
+                "name": skipped_test.name,
+                "reason": skipped_test.reason,
+                "destructive": skipped_test.destructive,
+                "reset_recommended": skipped_test.reset_recommended,
+            }
+            for skipped_test in result.skipped_tests
+        ],
         "findings": [
             {
                 "title": finding.title,
                 "class": finding.vulnerability_class.value,
                 "severity": finding.severity.value,
                 "risk_score": finding.risk_score,
+                "destructive": finding.destructive,
+                "reset_recommended": finding.reset_recommended,
                 "endpoint": finding.endpoint,
                 "method": finding.method,
                 "identity_name": finding.identity_name,

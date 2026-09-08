@@ -132,6 +132,8 @@ def run_bfla_test(
             "Enforce role checks before executing privileged functions. "
             "Return a consistent forbidden response for identities without the required role."
         ),
+        destructive=test_config.destructive,
+        reset_recommended=test_config.reset_recommended,
         evidence=[evidence],
     )
     return [finding]

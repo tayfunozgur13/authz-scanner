@@ -136,6 +136,46 @@ def test_run_scan_logs_in_identities_checks_api_and_runs_bola(monkeypatch) -> No
     assert result.finding_count == 0
 
 
+def test_run_scan_skips_destructive_tests_by_default(monkeypatch) -> None:
+    config = build_config()
+    config.bfla.tests[0].destructive = True
+    config.bfla.tests[0].reset_recommended = True
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/session":
+            return httpx.Response(200, json={"token": "identity-token"})
+        if request.url.path == "/health":
+            return httpx.Response(200, json={"status": "ok"})
+        if request.url.path == "/openapi.json":
+            return httpx.Response(200, json={"info": {"title": "External API"}, "paths": {}})
+        if request.url.path == "/me":
+            return httpx.Response(200, json={"subject_id": "subject-owner"})
+        if request.url.path == "/resources":
+            return httpx.Response(200, json=[{"id": "resource-1", "owner_id": "subject-owner"}])
+        if request.url.path == "/resources/resource-1":
+            return httpx.Response(403, json={"detail": "Forbidden"})
+        if request.url.path == "/admin/users":
+            raise AssertionError("Destructive BFLA test should not run by default")
+        return httpx.Response(404, json={})
+
+    class MockClient(httpx.Client):
+        def __init__(self, *args, **kwargs) -> None:
+            super().__init__(
+                transport=httpx.MockTransport(handler),
+                base_url=kwargs["base_url"],
+                timeout=kwargs["timeout"],
+            )
+
+    monkeypatch.setattr(httpx, "Client", MockClient)
+
+    result = run_scan(config)
+
+    assert result.findings == []
+    assert len(result.skipped_tests) == 1
+    assert result.skipped_tests[0].name == "low_privilege_users_cannot_open_admin_panel"
+    assert result.skipped_tests[0].reset_recommended is True
+
+
 def test_write_reports_writes_json_markdown_and_html_when_format_is_all(tmp_path) -> None:
     scanner_result = ScannerRunResult(
         target_name="external-api",

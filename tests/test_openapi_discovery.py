@@ -130,6 +130,13 @@ def test_generate_config_creates_reviewable_starter_config_from_openapi() -> Non
     assert "/orders/{id}/items" in bola_paths
     assert "/orders/{id}/items/{item_id}" in bola_paths
     assert all(test["review_required"] is True for test in bola_tests)
+    assert any(
+        test["attack"]["method"] == "PUT"
+        and test["attack"]["path_template"] == "/orders/{id}"
+        and test["destructive"] is True
+        and test["reset_recommended"] is True
+        for test in bola_tests
+    )
     assert any(test["attack"].get("path_params") == {"item_id": "items.0.id"} for test in bola_tests)
 
     bfla_tests = config["bfla"]["tests"]
@@ -137,6 +144,12 @@ def test_generate_config_creates_reviewable_starter_config_from_openapi() -> Non
     assert "/orders/{id}/refund" in bfla_paths
     assert "/admin/users" in bfla_paths
     assert all(test["review_notes"] for test in bfla_tests)
+    assert any(
+        test["attack"]["method"] == "POST"
+        and test["attack"]["path_template"] == "/orders/{id}/refund"
+        and test["destructive"] is True
+        for test in bfla_tests
+    )
 
     property_tests = config["property_auth"]["tests"]
     assert any(test["type"] == "excessive_data_exposure" for test in property_tests)
@@ -157,6 +170,13 @@ def test_generate_config_creates_reviewable_starter_config_from_openapi() -> Non
         test["type"] == "privilege_escalation"
         and test["request"]["path_template"] == "/users/{subject_id}"
         for test in property_tests
+    )
+    assert any(
+        payload["name"] == "generated_force_status"
+        and payload["destructive"] is True
+        and payload["reset_recommended"] is True
+        for test in property_tests
+        for payload in test.get("payloads", [])
     )
 
 

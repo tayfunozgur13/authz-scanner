@@ -35,6 +35,8 @@ bola:
     expected_status: 403
     business_impact: Unauthorized order access or manipulation may expose customer
       purchase data or disrupt fulfillment.
+    destructive: false
+    reset_recommended: false
     review_required: true
     review_notes:
     - Generated from OpenAPI path GET /orders/{order_id}.
@@ -53,6 +55,8 @@ bola:
     expected_status: 403
     business_impact: Unauthorized order access or manipulation may expose customer
       purchase data or disrupt fulfillment.
+    destructive: true
+    reset_recommended: true
     review_required: true
     review_notes:
     - Generated from OpenAPI path PUT /orders/{order_id}.
@@ -72,6 +76,8 @@ bola:
     expected_status: 403
     business_impact: Unauthorized order access or manipulation may expose customer
       purchase data or disrupt fulfillment.
+    destructive: true
+    reset_recommended: true
     review_required: true
     review_notes:
     - Generated from OpenAPI path DELETE /orders/{order_id}.
@@ -91,6 +97,8 @@ bola:
     expected_status: 403
     business_impact: Unauthorized order access or manipulation may expose customer
       purchase data or disrupt fulfillment.
+    destructive: false
+    reset_recommended: false
     review_required: true
     review_notes:
     - Generated from OpenAPI path GET /orders/{order_id}/items.
@@ -111,6 +119,8 @@ bola:
     expected_status: 403
     business_impact: Unauthorized order access or manipulation may expose customer
       purchase data or disrupt fulfillment.
+    destructive: false
+    reset_recommended: false
     review_required: true
     review_notes:
     - Generated from OpenAPI path GET /orders/{order_id}/items/{item_id}.
@@ -128,6 +138,8 @@ bola:
       path_template: /invoices/{id}
     expected_status: 403
     business_impact: TODO_BUSINESS_IMPACT
+    destructive: false
+    reset_recommended: false
     review_required: true
     review_notes:
     - Generated from OpenAPI path GET /invoices/{invoice_id}.
@@ -145,6 +157,8 @@ bola:
       path_template: /support/tickets/{id}
     expected_status: 403
     business_impact: TODO_BUSINESS_IMPACT
+    destructive: false
+    reset_recommended: false
     review_required: true
     review_notes:
     - Generated from OpenAPI path GET /support/tickets/{ticket_id}.
@@ -160,6 +174,8 @@ bfla:
     expected_status: 403
     business_impact: Unauthorized refunds may cause direct financial loss and reconciliation
       issues.
+    destructive: true
+    reset_recommended: true
     review_required: true
     review_notes:
     - Generated from privileged-looking OpenAPI path POST /orders/{order_id}/refund.
@@ -177,6 +193,8 @@ bfla:
       path_template: /orders/{id}/approve
     expected_status: 403
     business_impact: Unauthorized approvals may bypass business review workflows.
+    destructive: true
+    reset_recommended: true
     review_required: true
     review_notes:
     - Generated from privileged-looking OpenAPI path POST /orders/{order_id}/approve.
@@ -195,6 +213,8 @@ bfla:
     expected_status: 403
     business_impact: Unauthorized administrative access may expose account metadata
       or privileged operations.
+    destructive: false
+    reset_recommended: false
     review_required: true
     review_notes:
     - Generated from privileged-looking OpenAPI path GET /admin/users.
@@ -239,6 +259,8 @@ property_auth:
       path_template: /orders
     payloads:
     - name: generated_force_status
+      destructive: true
+      reset_recommended: true
       json_body:
         status: approved
       forbidden_effects:
@@ -250,6 +272,8 @@ property_auth:
       - Generated because request body contains risk field 'status'.
       - Confirm this field is server-controlled for this API.
     - name: generated_force_total_amount
+      destructive: true
+      reset_recommended: true
       json_body:
         total_amount: '0.01'
       forbidden_effects:
@@ -272,6 +296,8 @@ property_auth:
       path_template: /orders/{id}
     payloads:
     - name: generated_force_status
+      destructive: true
+      reset_recommended: true
       json_body:
         status: approved
       forbidden_effects:
@@ -283,6 +309,8 @@ property_auth:
       - Generated because request body contains risk field 'status'.
       - Confirm this field is server-controlled for this API.
     - name: generated_force_total_amount
+      destructive: true
+      reset_recommended: true
       json_body:
         total_amount: '0.01'
       forbidden_effects:
@@ -311,6 +339,8 @@ property_auth:
       path_template: /users/{subject_id}
     payloads:
     - name: generated_force_role
+      destructive: true
+      reset_recommended: true
       json_body:
         role: admin
       forbidden_effects:

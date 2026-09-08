@@ -340,6 +340,7 @@ It does not blindly decide final authorization rules. Generated tests include:
 
 - `review_required: true`
 - `review_notes`
+- `destructive: true` for inferred mutation-capable tests and payloads
 - placeholder identities such as `TODO_OWNER_EMAIL`
 - inferred BOLA, BFLA, excessive data exposure, mass assignment, and privilege escalation candidates
 
@@ -355,6 +356,7 @@ Before using an OpenAPI-generated starter config against a real API:
 - Confirm ownership fields used by object-level authorization tests.
 - Complete request bodies for non-GET endpoints when required.
 - Make mass assignment payloads valid for the target API.
+- Review every `destructive: true` test before running with `--include-destructive`.
 - Customize business impact statements for the application's real business context.
 - Review extra generated candidates before keeping or removing them.
 - Keep `review_required: true` until the test has been manually validated.
@@ -527,6 +529,48 @@ bfla:
 ```
 
 Payload-level overrides are also supported for property authorization tests, which lets different mass assignment payloads carry different risk scores.
+
+---
+
+## Destructive Test Guard
+
+Some authorization checks are safe read-only probes. Others intentionally try to change target state.
+
+Examples of destructive tests:
+
+- updating or cancelling another user's order
+- calling refund or approval actions
+- assigning or closing support tickets
+- submitting mass assignment payloads that create or modify records
+- attempting role promotion through profile update endpoints
+
+These tests are marked in YAML:
+
+```yaml
+destructive: true
+reset_recommended: true
+```
+
+By default, destructive tests are skipped:
+
+```bash
+python -m scanner.main --config config/vulnerable.yaml
+```
+
+The CLI and reports show which tests were skipped.
+
+Run the full mutation-capable scan only when the target environment can tolerate state changes:
+
+```bash
+python -m scanner.main \
+  --compare-config config/vulnerable.yaml config/hardened.yaml \
+  --include-destructive \
+  --report-format all
+```
+
+`reset_recommended: true` means the test may leave demo data changed after execution.
+
+The scanner does not automatically reset target data. Reset is a separate environment operation so that real external APIs are never modified by hidden scanner side effects.
 
 ---
 

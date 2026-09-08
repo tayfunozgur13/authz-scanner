@@ -88,6 +88,8 @@ property_auth:
         path_template: /resources
       payloads:
         - name: force_approved_state
+          destructive: true
+          reset_recommended: true
           json_body:
             state: approved
           forbidden_effects:

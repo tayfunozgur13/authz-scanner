@@ -55,6 +55,10 @@ MASS_ASSIGNMENT_FIELD_VALUES = {
 }
 
 
+def is_destructive_method(method: str) -> bool:
+    return method.upper() in {"POST", "PUT", "PATCH", "DELETE"}
+
+
 def load_openapi_document(source: str) -> dict[str, Any]:
     parsed = urlparse(source)
     if parsed.scheme in {"http", "https"}:
@@ -259,6 +263,8 @@ def generate_bola_tests(paths: dict[str, Any]) -> list[dict[str, Any]]:
                     "attack": attack,
                     "expected_status": 403,
                     "business_impact": infer_business_impact(path, "bola"),
+                    "destructive": is_destructive_method(method),
+                    "reset_recommended": is_destructive_method(method),
                     "review_required": True,
                     "review_notes": build_review_notes(
                         f"Generated from OpenAPI path {method} {path}.",
@@ -290,6 +296,8 @@ def generate_bfla_tests(paths: dict[str, Any]) -> list[dict[str, Any]]:
                 },
                 "expected_status": 403,
                 "business_impact": infer_business_impact(path, "bfla"),
+                "destructive": is_destructive_method(method),
+                "reset_recommended": is_destructive_method(method),
                 "review_required": True,
                 "review_notes": build_review_notes(
                     f"Generated from privileged-looking OpenAPI path {method} {path}.",
@@ -370,6 +378,8 @@ def generate_property_payloads(properties: dict[str, Any]) -> list[dict[str, Any
         payloads.append(
             {
                 "name": f"generated_force_{field}",
+                "destructive": True,
+                "reset_recommended": True,
                 "json_body": {field: value},
                 "forbidden_effects": {field: value},
                 "business_impact": infer_business_impact(field, "mass_assignment"),

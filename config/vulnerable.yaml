@@ -1,15 +1,12 @@
 target:
   name: vulnerable
   base_url: http://127.0.0.1:8001
-
 auth:
   login_path: /auth/login
   token_field: access_token
-
 profile:
   path: /users/me
   id_field: id
-
 identities:
   userA:
     email: userA@example.com
@@ -31,303 +28,339 @@ identities:
     email: manager1@example.com
     password: Password123!
     role: manager
-
 bola:
   tests:
-    - name: regular_users_cannot_read_each_others_orders
-      role: customer
-      owner_field: owner_id
-      resource:
-        list_method: GET
-        list_path: /orders
-        id_field: id
-      attack:
-        method: GET
-        path_template: /orders/{id}
-      expected_status: 403
-      severity: high
-      risk_score: 80
-      business_impact: Unauthorized order access may expose customer purchase history, order totals, and item details to another customer account.
-    - name: regular_users_cannot_update_each_others_orders
-      role: customer
-      owner_field: owner_id
-      resource:
-        list_method: GET
-        list_path: /orders
-        id_field: id
-      attack:
-        method: PUT
-        path_template: /orders/{id}
-        json_body:
-          total_amount: "1.00"
-      expected_status: 403
-      severity: critical
-      risk_score: 90
-      business_impact: Unauthorized order updates may let a customer alter another customer's billing amount or order metadata.
-    - name: regular_users_cannot_cancel_each_others_orders
-      role: customer
-      owner_field: owner_id
-      resource:
-        list_method: GET
-        list_path: /orders
-        id_field: id
-      attack:
-        method: DELETE
-        path_template: /orders/{id}
-      expected_status: 403
-      severity: critical
-      risk_score: 90
-      business_impact: Unauthorized cancellation may disrupt another customer's order fulfillment and create support or refund workload.
-    - name: regular_users_cannot_list_each_others_order_items
-      role: customer
-      owner_field: owner_id
-      resource:
-        list_method: GET
-        list_path: /orders
-        id_field: id
-      attack:
-        method: GET
-        path_template: /orders/{id}/items
-      expected_status: 403
-      severity: high
-      risk_score: 75
-      business_impact: Unauthorized item listing may reveal product preferences, purchase contents, and commercial activity of another customer.
-    - name: regular_users_cannot_read_each_others_order_item_detail
-      role: customer
-      owner_field: owner_id
-      resource:
-        list_method: GET
-        list_path: /orders
-        id_field: id
-      attack:
-        method: GET
-        path_template: /orders/{id}/items/{item_id}
-        path_params:
-          item_id: items.0.id
-      expected_status: 403
-      severity: high
-      risk_score: 75
-      business_impact: Unauthorized item detail access may expose individual purchased products and pricing information from another customer's order.
-    - name: regular_users_cannot_read_each_others_invoices
-      role: customer
-      owner_field: owner_id
-      resource:
-        list_method: GET
-        list_path: /invoices
-        id_field: id
-      attack:
-        method: GET
-        path_template: /invoices/{id}
-      expected_status: 403
-      severity: critical
-      risk_score: 92
-      business_impact: Unauthorized invoice access may expose billing records, invoice numbers, and outstanding balances for another customer.
-    - name: regular_users_cannot_read_cross_tenant_invoice_detail
-      role: customer
-      owner_field: owner_id
-      resource:
-        list_method: GET
-        list_path: /invoices
-        id_field: id
-      attack:
-        method: GET
-        path_template: /organizations/{organization_id}/invoices/{id}
-        path_params:
-          organization_id: organization_id
-      expected_status: 403
-      severity: critical
-      risk_score: 95
-      business_impact: Cross-tenant invoice access may expose financial records from another organization and break tenant isolation guarantees.
-    - name: customers_cannot_read_each_others_support_tickets
-      role: customer
-      owner_field: owner_id
-      resource:
-        list_method: GET
-        list_path: /support/tickets
-        id_field: id
-      attack:
-        method: GET
-        path_template: /support/tickets/{id}
-      expected_status: 403
-      severity: high
-      risk_score: 80
-      business_impact: Unauthorized support ticket access may expose customer complaints, billing issues, and internal service context.
-
+  - name: regular_users_cannot_read_each_others_orders
+    role: customer
+    owner_field: owner_id
+    resource:
+      list_method: GET
+      list_path: /orders
+      id_field: id
+    attack:
+      method: GET
+      path_template: /orders/{id}
+    expected_status: 403
+    severity: high
+    risk_score: 80
+    business_impact: Unauthorized order access may expose customer purchase history,
+      order totals, and item details to another customer account.
+  - name: regular_users_cannot_update_each_others_orders
+    role: customer
+    owner_field: owner_id
+    resource:
+      list_method: GET
+      list_path: /orders
+      id_field: id
+    attack:
+      method: PUT
+      path_template: /orders/{id}
+      json_body:
+        total_amount: '1.00'
+    expected_status: 403
+    severity: critical
+    risk_score: 90
+    business_impact: Unauthorized order updates may let a customer alter another customer's
+      billing amount or order metadata.
+    destructive: true
+    reset_recommended: true
+  - name: regular_users_cannot_cancel_each_others_orders
+    role: customer
+    owner_field: owner_id
+    resource:
+      list_method: GET
+      list_path: /orders
+      id_field: id
+    attack:
+      method: DELETE
+      path_template: /orders/{id}
+    expected_status: 403
+    severity: critical
+    risk_score: 90
+    business_impact: Unauthorized cancellation may disrupt another customer's order
+      fulfillment and create support or refund workload.
+    destructive: true
+    reset_recommended: true
+  - name: regular_users_cannot_list_each_others_order_items
+    role: customer
+    owner_field: owner_id
+    resource:
+      list_method: GET
+      list_path: /orders
+      id_field: id
+    attack:
+      method: GET
+      path_template: /orders/{id}/items
+    expected_status: 403
+    severity: high
+    risk_score: 75
+    business_impact: Unauthorized item listing may reveal product preferences, purchase
+      contents, and commercial activity of another customer.
+  - name: regular_users_cannot_read_each_others_order_item_detail
+    role: customer
+    owner_field: owner_id
+    resource:
+      list_method: GET
+      list_path: /orders
+      id_field: id
+    attack:
+      method: GET
+      path_template: /orders/{id}/items/{item_id}
+      path_params:
+        item_id: items.0.id
+    expected_status: 403
+    severity: high
+    risk_score: 75
+    business_impact: Unauthorized item detail access may expose individual purchased
+      products and pricing information from another customer's order.
+  - name: regular_users_cannot_read_each_others_invoices
+    role: customer
+    owner_field: owner_id
+    resource:
+      list_method: GET
+      list_path: /invoices
+      id_field: id
+    attack:
+      method: GET
+      path_template: /invoices/{id}
+    expected_status: 403
+    severity: critical
+    risk_score: 92
+    business_impact: Unauthorized invoice access may expose billing records, invoice
+      numbers, and outstanding balances for another customer.
+  - name: regular_users_cannot_read_cross_tenant_invoice_detail
+    role: customer
+    owner_field: owner_id
+    resource:
+      list_method: GET
+      list_path: /invoices
+      id_field: id
+    attack:
+      method: GET
+      path_template: /organizations/{organization_id}/invoices/{id}
+      path_params:
+        organization_id: organization_id
+    expected_status: 403
+    severity: critical
+    risk_score: 95
+    business_impact: Cross-tenant invoice access may expose financial records from
+      another organization and break tenant isolation guarantees.
+  - name: customers_cannot_read_each_others_support_tickets
+    role: customer
+    owner_field: owner_id
+    resource:
+      list_method: GET
+      list_path: /support/tickets
+      id_field: id
+    attack:
+      method: GET
+      path_template: /support/tickets/{id}
+    expected_status: 403
+    severity: high
+    risk_score: 80
+    business_impact: Unauthorized support ticket access may expose customer complaints,
+      billing issues, and internal service context.
 bfla:
   tests:
-    - name: regular_users_cannot_refund_orders
-      role: customer
-      resource:
-        list_method: GET
-        list_path: /orders
-        id_field: id
-        owner_field: owner_id
-      attack:
-        method: POST
-        path_template: /orders/{id}/refund
-      expected_status: 403
-      severity: critical
-      risk_score: 98
-      business_impact: Unauthorized refunds may cause direct financial loss and reconciliation issues for the business.
-    - name: regular_users_cannot_approve_orders
-      role: customer
-      resource:
-        list_method: GET
-        list_path: /orders
-        id_field: id
-        owner_field: owner_id
-      attack:
-        method: POST
-        path_template: /orders/{id}/approve
-      expected_status: 403
-      severity: critical
-      risk_score: 92
-      business_impact: Unauthorized approvals may bypass operational review and move orders into a trusted state without staff validation.
-    - name: regular_users_cannot_list_admin_users
-      role: customer
-      attack:
-        method: GET
-        path_template: /admin/users
-      expected_status: 403
-      severity: critical
-      risk_score: 90
-      business_impact: Unauthorized access to the admin user list may expose user inventory and account metadata to non-admin users.
-    - name: customers_cannot_assign_support_tickets
-      role: customer
-      resource:
-        list_method: GET
-        list_path: /support/tickets
-        id_field: id
-        owner_field: owner_id
-      attack:
-        method: POST
-        path_template: /support/tickets/{id}/assign
-      expected_status: 403
-      severity: high
-      risk_score: 82
-      business_impact: Unauthorized ticket assignment may let customers manipulate support ownership and disrupt service operations.
-    - name: support_users_cannot_close_support_tickets_without_manager_approval
-      role: support
-      resource:
-        list_method: GET
-        list_path: /support/tickets
-        id_field: id
-      attack:
-        method: POST
-        path_template: /support/tickets/{id}/close
-      expected_status: 403
-      severity: high
-      risk_score: 85
-      business_impact: Unauthorized ticket closure may hide unresolved customer issues and falsify support performance metrics.
-
+  - name: regular_users_cannot_refund_orders
+    role: customer
+    resource:
+      list_method: GET
+      list_path: /orders
+      id_field: id
+      owner_field: owner_id
+    attack:
+      method: POST
+      path_template: /orders/{id}/refund
+    expected_status: 403
+    severity: critical
+    risk_score: 98
+    business_impact: Unauthorized refunds may cause direct financial loss and reconciliation
+      issues for the business.
+    destructive: true
+    reset_recommended: true
+  - name: regular_users_cannot_approve_orders
+    role: customer
+    resource:
+      list_method: GET
+      list_path: /orders
+      id_field: id
+      owner_field: owner_id
+    attack:
+      method: POST
+      path_template: /orders/{id}/approve
+    expected_status: 403
+    severity: critical
+    risk_score: 92
+    business_impact: Unauthorized approvals may bypass operational review and move
+      orders into a trusted state without staff validation.
+    destructive: true
+    reset_recommended: true
+  - name: regular_users_cannot_list_admin_users
+    role: customer
+    attack:
+      method: GET
+      path_template: /admin/users
+    expected_status: 403
+    severity: critical
+    risk_score: 90
+    business_impact: Unauthorized access to the admin user list may expose user inventory
+      and account metadata to non-admin users.
+  - name: customers_cannot_assign_support_tickets
+    role: customer
+    resource:
+      list_method: GET
+      list_path: /support/tickets
+      id_field: id
+      owner_field: owner_id
+    attack:
+      method: POST
+      path_template: /support/tickets/{id}/assign
+    expected_status: 403
+    severity: high
+    risk_score: 82
+    business_impact: Unauthorized ticket assignment may let customers manipulate support
+      ownership and disrupt service operations.
+    destructive: true
+    reset_recommended: true
+  - name: support_users_cannot_close_support_tickets_without_manager_approval
+    role: support
+    resource:
+      list_method: GET
+      list_path: /support/tickets
+      id_field: id
+    attack:
+      method: POST
+      path_template: /support/tickets/{id}/close
+    expected_status: 403
+    severity: high
+    risk_score: 85
+    business_impact: Unauthorized ticket closure may hide unresolved customer issues
+      and falsify support performance metrics.
+    destructive: true
+    reset_recommended: true
 property_auth:
   tests:
-    - name: users_me_must_not_expose_sensitive_fields
-      type: excessive_data_exposure
-      role: customer
+  - name: users_me_must_not_expose_sensitive_fields
+    type: excessive_data_exposure
+    role: customer
+    severity: critical
+    risk_score: 95
+    request:
+      method: GET
+      path_template: /users/me
+    forbidden_fields:
+    - password
+    - password_hash
+    - hashed_password
+    - secret
+    - token
+    - access_token
+    - refresh_token
+    - api_key
+    - private_key
+    - ssn
+    - national_id
+    - credit_card
+    - card_number
+    - cvv
+    - otp_secret
+    - mfa_secret
+    - reset_token
+    business_impact: Exposed credential or secret fields may leak into clients, browser
+      storage, logs, or third-party monitoring systems.
+  - name: order_create_must_not_accept_server_controlled_fields
+    type: mass_assignment
+    role: customer
+    request:
+      method: POST
+      path_template: /orders
+    payloads:
+    - name: approved_status_and_low_total
       severity: critical
-      risk_score: 95
-      request:
-        method: GET
-        path_template: /users/me
-      forbidden_fields:
-        - password
-        - password_hash
-        - hashed_password
-        - secret
-        - token
-        - access_token
-        - refresh_token
-        - api_key
-        - private_key
-        - ssn
-        - national_id
-        - credit_card
-        - card_number
-        - cvv
-        - otp_secret
-        - mfa_secret
-        - reset_token
-      business_impact: Exposed credential or secret fields may leak into clients, browser storage, logs, or third-party monitoring systems.
-    - name: order_create_must_not_accept_server_controlled_fields
-      type: mass_assignment
-      role: customer
-      request:
-        method: POST
-        path_template: /orders
-      payloads:
-        - name: approved_status_and_low_total
-          severity: critical
-          risk_score: 96
-          json_body:
-            status: approved
-            total_amount: "0.01"
-            items:
-              - product_name: Laptop Stand
-                quantity: 2
-                unit_price: "45.00"
-          forbidden_effects:
-            status: approved
-            total_amount: "0.01"
-          business_impact: A customer may create an already approved order with an artificially low total, bypassing pricing and review controls.
-        - name: refunded_status
-          severity: critical
-          risk_score: 94
-          json_body:
-            status: refunded
-            total_amount: "0.01"
-            items:
-              - product_name: Desk Lamp
-                quantity: 1
-                unit_price: "30.00"
-          forbidden_effects:
-            status: refunded
-          business_impact: A customer may create an order in a refunded state, causing accounting inconsistencies and refund workflow abuse.
-        - name: manipulated_total_only
-          severity: critical
-          risk_score: 91
-          json_body:
-            total_amount: "0.01"
-            items:
-              - product_name: Monitor Arm
-                quantity: 2
-                unit_price: "60.00"
-          forbidden_effects:
-            total_amount: "0.01"
-          business_impact: A customer may underpay by forcing a lower total than the server should calculate from item prices.
-    - name: support_ticket_detail_must_not_expose_internal_notes_to_customers
-      type: excessive_data_exposure
-      role: customer
-      severity: high
-      risk_score: 78
-      resource:
-        list_method: GET
-        list_path: /support/tickets
-        id_field: id
-        owner_field: owner_id
-      request:
-        method: GET
-        path_template: /support/tickets/{id}
-      forbidden_fields:
-        - internal_notes
-      business_impact: Exposed internal support notes may reveal investigation context, fraud suspicion, or sensitive operational metadata to customers.
-    - name: users_cannot_promote_themselves_by_role_assignment
-      type: privilege_escalation
-      role: customer
+      risk_score: 96
+      json_body:
+        status: approved
+        total_amount: '0.01'
+        items:
+        - product_name: Laptop Stand
+          quantity: 2
+          unit_price: '45.00'
+      forbidden_effects:
+        status: approved
+        total_amount: '0.01'
+      business_impact: A customer may create an already approved order with an artificially
+        low total, bypassing pricing and review controls.
+      destructive: true
+      reset_recommended: true
+    - name: refunded_status
+      severity: critical
+      risk_score: 94
+      json_body:
+        status: refunded
+        total_amount: '0.01'
+        items:
+        - product_name: Desk Lamp
+          quantity: 1
+          unit_price: '30.00'
+      forbidden_effects:
+        status: refunded
+      business_impact: A customer may create an order in a refunded state, causing
+        accounting inconsistencies and refund workflow abuse.
+      destructive: true
+      reset_recommended: true
+    - name: manipulated_total_only
+      severity: critical
+      risk_score: 91
+      json_body:
+        total_amount: '0.01'
+        items:
+        - product_name: Monitor Arm
+          quantity: 2
+          unit_price: '60.00'
+      forbidden_effects:
+        total_amount: '0.01'
+      business_impact: A customer may underpay by forcing a lower total than the server
+        should calculate from item prices.
+      destructive: true
+      reset_recommended: true
+  - name: support_ticket_detail_must_not_expose_internal_notes_to_customers
+    type: excessive_data_exposure
+    role: customer
+    severity: high
+    risk_score: 78
+    resource:
+      list_method: GET
+      list_path: /support/tickets
+      id_field: id
+      owner_field: owner_id
+    request:
+      method: GET
+      path_template: /support/tickets/{id}
+    forbidden_fields:
+    - internal_notes
+    business_impact: Exposed internal support notes may reveal investigation context,
+      fraud suspicion, or sensitive operational metadata to customers.
+  - name: users_cannot_promote_themselves_by_role_assignment
+    type: privilege_escalation
+    role: customer
+    severity: critical
+    risk_score: 99
+    request:
+      method: PUT
+      path_template: /users/{subject_id}
+    payloads:
+    - name: promote_to_admin
       severity: critical
       risk_score: 99
-      request:
-        method: PUT
-        path_template: /users/{subject_id}
-      payloads:
-        - name: promote_to_admin
-          severity: critical
-          risk_score: 99
-          json_body:
-            role: admin
-          verification:
-            method: GET
-            path_template: /users/me
-          forbidden_effects:
-            role: admin
-          business_impact: A normal user may gain administrative privileges and access restricted user or order management functions.
+      json_body:
+        role: admin
+      verification:
+        method: GET
+        path_template: /users/me
+      forbidden_effects:
+        role: admin
+      business_impact: A normal user may gain administrative privileges and access
+        restricted user or order management functions.
+      destructive: true
+      reset_recommended: true

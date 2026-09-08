@@ -173,6 +173,8 @@ def run_bola_test(
             "Verify resource ownership before returning or modifying the object. "
             "Allow access only when the current identity owns the resource or has an explicit privileged role."
         ),
+        destructive=test_config.destructive,
+        reset_recommended=test_config.reset_recommended,
         evidence=[evidence],
     )
     return [finding]
