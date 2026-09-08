@@ -1,0 +1,212 @@
+target:
+  name: vulnerable-refresh
+  base_url: http://127.0.0.1:8001
+
+auth:
+  login_path: /auth/login-expired-with-refresh
+  token_field: access_token
+  refresh_path: /auth/refresh
+  refresh_token_field: refresh_token
+
+profile:
+  path: /users/me
+  id_field: id
+
+identities:
+  userA:
+    email: userA@example.com
+    password: Password123!
+    role: user
+  userB:
+    email: userB@example.com
+    password: Password123!
+    role: user
+  admin1:
+    email: admin1@example.com
+    password: Password123!
+    role: admin
+
+bola:
+  tests:
+    - name: regular_users_cannot_read_each_others_orders
+      role: user
+      owner_field: owner_id
+      resource:
+        list_method: GET
+        list_path: /orders
+        id_field: id
+      attack:
+        method: GET
+        path_template: /orders/{id}
+      expected_status: 403
+      business_impact: Unauthorized order access may expose customer purchase history, order totals, and item details to another customer account.
+    - name: regular_users_cannot_update_each_others_orders
+      role: user
+      owner_field: owner_id
+      resource:
+        list_method: GET
+        list_path: /orders
+        id_field: id
+      attack:
+        method: PUT
+        path_template: /orders/{id}
+        json_body:
+          total_amount: "1.00"
+      expected_status: 403
+      business_impact: Unauthorized order updates may let a customer alter another customer's billing amount or order metadata.
+    - name: regular_users_cannot_cancel_each_others_orders
+      role: user
+      owner_field: owner_id
+      resource:
+        list_method: GET
+        list_path: /orders
+        id_field: id
+      attack:
+        method: DELETE
+        path_template: /orders/{id}
+      expected_status: 403
+      business_impact: Unauthorized cancellation may disrupt another customer's order fulfillment and create support or refund workload.
+    - name: regular_users_cannot_list_each_others_order_items
+      role: user
+      owner_field: owner_id
+      resource:
+        list_method: GET
+        list_path: /orders
+        id_field: id
+      attack:
+        method: GET
+        path_template: /orders/{id}/items
+      expected_status: 403
+      business_impact: Unauthorized item listing may reveal product preferences, purchase contents, and commercial activity of another customer.
+    - name: regular_users_cannot_read_each_others_order_item_detail
+      role: user
+      owner_field: owner_id
+      resource:
+        list_method: GET
+        list_path: /orders
+        id_field: id
+      attack:
+        method: GET
+        path_template: /orders/{id}/items/{item_id}
+        path_params:
+          item_id: items.0.id
+      expected_status: 403
+      business_impact: Unauthorized item detail access may expose individual purchased products and pricing information from another customer's order.
+
+bfla:
+  tests:
+    - name: regular_users_cannot_refund_orders
+      role: user
+      resource:
+        list_method: GET
+        list_path: /orders
+        id_field: id
+        owner_field: owner_id
+      attack:
+        method: POST
+        path_template: /orders/{id}/refund
+      expected_status: 403
+      business_impact: Unauthorized refunds may cause direct financial loss and reconciliation issues for the business.
+    - name: regular_users_cannot_approve_orders
+      role: user
+      resource:
+        list_method: GET
+        list_path: /orders
+        id_field: id
+        owner_field: owner_id
+      attack:
+        method: POST
+        path_template: /orders/{id}/approve
+      expected_status: 403
+      business_impact: Unauthorized approvals may bypass operational review and move orders into a trusted state without staff validation.
+    - name: regular_users_cannot_list_admin_users
+      role: user
+      attack:
+        method: GET
+        path_template: /admin/users
+      expected_status: 403
+      business_impact: Unauthorized access to the admin user list may expose user inventory and account metadata to non-admin users.
+
+property_auth:
+  tests:
+    - name: users_me_must_not_expose_sensitive_fields
+      type: excessive_data_exposure
+      role: user
+      request:
+        method: GET
+        path_template: /users/me
+      forbidden_fields:
+        - password
+        - password_hash
+        - hashed_password
+        - secret
+        - token
+        - access_token
+        - refresh_token
+        - api_key
+        - private_key
+        - ssn
+        - national_id
+        - credit_card
+        - card_number
+        - cvv
+        - otp_secret
+        - mfa_secret
+        - reset_token
+      business_impact: Exposed credential or secret fields may leak into clients, browser storage, logs, or third-party monitoring systems.
+    - name: order_create_must_not_accept_server_controlled_fields
+      type: mass_assignment
+      role: user
+      request:
+        method: POST
+        path_template: /orders
+      payloads:
+        - name: approved_status_and_low_total
+          json_body:
+            status: approved
+            total_amount: "0.01"
+            items:
+              - product_name: Laptop Stand
+                quantity: 2
+                unit_price: "45.00"
+          forbidden_effects:
+            status: approved
+            total_amount: "0.01"
+          business_impact: A customer may create an already approved order with an artificially low total, bypassing pricing and review controls.
+        - name: refunded_status
+          json_body:
+            status: refunded
+            total_amount: "0.01"
+            items:
+              - product_name: Desk Lamp
+                quantity: 1
+                unit_price: "30.00"
+          forbidden_effects:
+            status: refunded
+          business_impact: A customer may create an order in a refunded state, causing accounting inconsistencies and refund workflow abuse.
+        - name: manipulated_total_only
+          json_body:
+            total_amount: "0.01"
+            items:
+              - product_name: Monitor Arm
+                quantity: 2
+                unit_price: "60.00"
+          forbidden_effects:
+            total_amount: "0.01"
+          business_impact: A customer may underpay by forcing a lower total than the server should calculate from item prices.
+    - name: users_cannot_promote_themselves_by_role_assignment
+      type: privilege_escalation
+      role: user
+      request:
+        method: PUT
+        path_template: /users/{subject_id}
+      payloads:
+        - name: promote_to_admin
+          json_body:
+            role: admin
+          verification:
+            method: GET
+            path_template: /users/me
+          forbidden_effects:
+            role: admin
+          business_impact: A normal user may gain administrative privileges and access restricted user or order management functions.

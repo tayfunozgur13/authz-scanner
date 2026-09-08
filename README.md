@@ -737,6 +737,12 @@ auth:
 
 When a configured request receives `401`, the scanner refreshes that identity's access token and retries the same request once.
 
+The demo APIs include refresh-token scanner configs that intentionally start with expired access tokens:
+
+```bash
+python -m scanner.main --compare-config config/vulnerable_refresh.yaml config/hardened_refresh.yaml
+```
+
 ---
 
 ## Security and Ethical Use

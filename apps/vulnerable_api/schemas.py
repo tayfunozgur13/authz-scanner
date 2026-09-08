@@ -16,6 +16,14 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class TokenPairResponse(TokenResponse):
+    refresh_token: str
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
 class UserPublic(BaseModel):
     id: str
     email: str

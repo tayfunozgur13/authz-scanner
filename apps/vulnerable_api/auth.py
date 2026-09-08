@@ -12,8 +12,10 @@ from apps.vulnerable_api.models import User
 
 
 SECRET_KEY = "dev-vulnerable-authz-scanner-secret"
+REFRESH_SECRET_KEY = "dev-vulnerable-authz-scanner-refresh-secret"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
+REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24
 
 password_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
@@ -43,6 +45,36 @@ def create_access_token(user: User) -> str:
         "exp": expires_at,
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def create_expired_access_token(user: User) -> str:
+    expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+    payload = {
+        "sub": user.id,
+        "exp": expires_at,
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def create_refresh_token(user: User) -> str:
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
+    payload = {
+        "sub": user.id,
+        "exp": expires_at,
+    }
+    return jwt.encode(payload, REFRESH_SECRET_KEY, algorithm=ALGORITHM)
+
+
+def get_user_from_refresh_token(token: str, db: Session) -> User | None:
+    try:
+        payload = jwt.decode(token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+    except JWTError:
+        return None
+
+    if not isinstance(user_id, str):
+        return None
+    return db.get(User, user_id)
 
 
 def get_current_user(

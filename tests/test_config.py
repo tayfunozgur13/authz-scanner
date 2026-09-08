@@ -15,6 +15,20 @@ def test_demo_cookie_configs_load_successfully() -> None:
     assert hardened_config.auth.cookie_name == "session_id"
 
 
+def test_demo_refresh_configs_load_successfully() -> None:
+    vulnerable_config = load_config("config/vulnerable_refresh.yaml")
+    hardened_config = load_config("config/hardened_refresh.yaml")
+
+    assert vulnerable_config.target.name == "vulnerable-refresh"
+    assert hardened_config.target.name == "hardened-refresh"
+    assert vulnerable_config.auth.login_path == "/auth/login-expired-with-refresh"
+    assert hardened_config.auth.login_path == "/auth/login-expired-with-refresh"
+    assert vulnerable_config.auth.refresh_path == "/auth/refresh"
+    assert hardened_config.auth.refresh_path == "/auth/refresh"
+    assert vulnerable_config.auth.refresh_token_field == "refresh_token"
+    assert hardened_config.auth.refresh_token_field == "refresh_token"
+
+
 def test_loads_scanner_config_from_yaml(tmp_path) -> None:
     config_path = tmp_path / "scanner.yaml"
     config_path.write_text(
