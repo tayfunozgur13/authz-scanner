@@ -116,6 +116,23 @@ bola:
     - Generated from OpenAPI path GET /orders/{order_id}/items/{item_id}.
     - Confirm owner_field and resource.id_field against the real response body.
     - Confirm this resource should be isolated between identities with role user.
+  - name: generated_bola_get_invoices_invoice_id
+    role: user
+    owner_field: owner_id
+    resource:
+      list_method: GET
+      list_path: /invoices
+      id_field: id
+    attack:
+      method: GET
+      path_template: /invoices/{id}
+    expected_status: 403
+    business_impact: TODO_BUSINESS_IMPACT
+    review_required: true
+    review_notes:
+    - Generated from OpenAPI path GET /invoices/{invoice_id}.
+    - Confirm owner_field and resource.id_field against the real response body.
+    - Confirm this resource should be isolated between identities with role user.
 bfla:
   tests:
   - name: generated_bfla_post_orders_order_id_refund

@@ -92,6 +92,32 @@ bola:
           item_id: items.0.id
       expected_status: 403
       business_impact: Unauthorized item detail access may expose individual purchased products and pricing information from another customer's order.
+    - name: regular_users_cannot_read_each_others_invoices
+      role: user
+      owner_field: owner_id
+      resource:
+        list_method: GET
+        list_path: /invoices
+        id_field: id
+      attack:
+        method: GET
+        path_template: /invoices/{id}
+      expected_status: 403
+      business_impact: Unauthorized invoice access may expose billing records, invoice numbers, and outstanding balances for another customer.
+    - name: regular_users_cannot_read_cross_tenant_invoice_detail
+      role: user
+      owner_field: owner_id
+      resource:
+        list_method: GET
+        list_path: /invoices
+        id_field: id
+      attack:
+        method: GET
+        path_template: /organizations/{organization_id}/invoices/{id}
+        path_params:
+          organization_id: organization_id
+      expected_status: 403
+      business_impact: Cross-tenant invoice access may expose financial records from another organization and break tenant isolation guarantees.
 
 bfla:
   tests:

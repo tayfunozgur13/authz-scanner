@@ -292,7 +292,7 @@ python -m scanner.main \
 Expected demo behavior:
 
 ```text
-vulnerable: 13 findings
+vulnerable: 15 findings
 hardened: 0 findings
 ```
 
@@ -357,7 +357,7 @@ Before using an OpenAPI-generated starter config against a real API:
 - Review extra generated candidates before keeping or removing them.
 - Keep `review_required: true` until the test has been manually validated.
 
-For the included vulnerable demo API, the current OpenAPI-generated starter config matches all manually defined BOLA and BFLA candidates, and adds one extra property authorization candidate for manual review.
+For the included vulnerable demo API, the current OpenAPI-generated starter config matches most manually defined BOLA candidates, all BFLA candidates, and the manually defined property authorization candidates. The remaining cross-tenant BOLA case is intentionally left to human review because OpenAPI alone cannot fully infer organization isolation rules.
 
 ---
 
@@ -383,13 +383,14 @@ This approach allows the scanner to evaluate actual authorization behavior rathe
 
 ## BOLA Detection
 
-BOLA tests evaluate whether one authenticated user can access objects belonging to another user.
+BOLA tests evaluate whether one authenticated user can access objects belonging to another user or another organization.
 
 Example:
 
 ```text
 User A -> GET /orders/USER_A_ORDER_ID -> 200 OK
 User B -> GET /orders/USER_A_ORDER_ID -> 200 OK
+User B -> GET /organizations/ORG_A_ID/invoices/USER_A_INVOICE_ID -> 200 OK
 ```
 
 If User B receives User A's protected object without proper authorization, the scanner generates a BOLA finding.

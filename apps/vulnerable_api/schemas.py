@@ -41,6 +41,24 @@ class UserUpdate(BaseModel):
     role: UserRole | None = None
 
 
+class OrganizationPublic(BaseModel):
+    id: str
+    name: str
+
+    model_config = {"from_attributes": True}
+
+
+class InvoicePublic(BaseModel):
+    id: str
+    organization_id: str
+    owner_id: str
+    invoice_number: str
+    amount_due: Decimal
+    status: str
+
+    model_config = {"from_attributes": True}
+
+
 class OrderItemPublic(BaseModel):
     id: str
     order_id: str

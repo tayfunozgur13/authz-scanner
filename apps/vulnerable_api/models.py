@@ -21,6 +21,22 @@ class OrderStatus(str, enum.Enum):
     CANCELLED = "cancelled"
 
 
+class Organization(Base):
+    __tablename__ = "organizations"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    invoices: Mapped[list["Invoice"]] = relationship(
+        back_populates="organization",
+        cascade="all, delete-orphan",
+    )
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -81,3 +97,25 @@ class OrderItem(Base):
     unit_price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
     order: Mapped[Order] = relationship(back_populates="items")
+
+
+class Invoice(Base):
+    __tablename__ = "invoices"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+    )
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id"),
+        index=True,
+        nullable=False,
+    )
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    invoice_number: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    amount_due: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+
+    organization: Mapped[Organization] = relationship(back_populates="invoices")
+    owner: Mapped[User] = relationship()
