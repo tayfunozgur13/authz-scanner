@@ -38,7 +38,7 @@ def reset_vulnerable_user_a() -> None:
         if user is None:
             user = db.query(VulnerableUser).filter_by(email="userA-renamed@example.com").one()
         user.email = "userA@example.com"
-        user.role = VulnerableUserRole.USER
+        user.role = VulnerableUserRole.CUSTOMER
         db.commit()
 
 
@@ -48,7 +48,7 @@ def reset_hardened_user_a() -> None:
         if user is None:
             user = db.query(HardenedUser).filter_by(email="userA-renamed@example.com").one()
         user.email = "userA@example.com"
-        user.role = HardenedUserRole.USER
+        user.role = HardenedUserRole.CUSTOMER
         db.commit()
 
 
@@ -151,5 +151,5 @@ def test_hardened_ignores_role_mass_assignment() -> None:
     )
 
     assert response.status_code == 200
-    assert response.json()["role"] == "user"
+    assert response.json()["role"] == "customer"
     reset_hardened_user_a()

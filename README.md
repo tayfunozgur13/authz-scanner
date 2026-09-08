@@ -226,8 +226,10 @@ Demo users are automatically seeded when the APIs start.
 
 | Identity | Email | Password | Role |
 | --- | --- | --- | --- |
-| userA | `userA@example.com` | `Password123!` | `user` |
-| userB | `userB@example.com` | `Password123!` | `user` |
+| userA | `userA@example.com` | `Password123!` | `customer` |
+| userB | `userB@example.com` | `Password123!` | `customer` |
+| support1 | `support1@example.com` | `Password123!` | `support` |
+| manager1 | `manager1@example.com` | `Password123!` | `manager` |
 | admin1 | `admin1@example.com` | `Password123!` | `admin` |
 
 These credentials are used **only for the local intentionally vulnerable/hardened demo environment**.
@@ -292,7 +294,7 @@ python -m scanner.main \
 Expected demo behavior:
 
 ```text
-vulnerable: 15 findings
+vulnerable: 19 findings
 hardened: 0 findings
 ```
 
@@ -357,7 +359,7 @@ Before using an OpenAPI-generated starter config against a real API:
 - Review extra generated candidates before keeping or removing them.
 - Keep `review_required: true` until the test has been manually validated.
 
-For the included vulnerable demo API, the current OpenAPI-generated starter config matches most manually defined BOLA candidates, all BFLA candidates, and the manually defined property authorization candidates. The remaining cross-tenant BOLA case is intentionally left to human review because OpenAPI alone cannot fully infer organization isolation rules.
+For the included vulnerable demo API, the current OpenAPI-generated starter config matches most manually defined BOLA candidates and several property authorization candidates. The remaining cross-tenant and role-workflow cases are intentionally left to human review because OpenAPI alone cannot fully infer organization isolation rules or business approval rules such as support-versus-manager permissions.
 
 ---
 
@@ -385,6 +387,8 @@ This approach allows the scanner to evaluate actual authorization behavior rathe
 
 BOLA tests evaluate whether one authenticated user can access objects belonging to another user or another organization.
 
+The demo lab includes customer-owned orders, invoices, and support tickets so the scanner can test multiple resource types instead of a single simplified object model.
+
 Example:
 
 ```text
@@ -400,6 +404,8 @@ If User B receives User A's protected object without proper authorization, the s
 ## BFLA Detection
 
 BFLA tests evaluate whether lower-privileged users can invoke privileged API functions.
+
+The demo lab includes `customer`, `support`, `manager`, and `admin` roles. This allows the scanner to check both broad privilege boundaries, such as customer access to admin endpoints, and narrower workflow boundaries, such as a support user assigning a ticket but not closing it without manager approval.
 
 Example:
 
@@ -418,6 +424,8 @@ The property authorization module evaluates issues such as:
 - Mass Assignment
 - Excessive Data Exposure
 - Privilege Escalation
+
+It supports both fixed endpoints such as `/users/me` and resource detail endpoints such as `/support/tickets/{id}`, where the scanner first discovers a valid object id from a configured list endpoint.
 
 Example privilege escalation attempt:
 
@@ -542,9 +550,10 @@ Some scanner modules intentionally perform mutation-based authorization tests.
 
 For example:
 
-- a privilege escalation test may temporarily change `userA` from `user` to `admin`
+- a privilege escalation test may temporarily change `userA` from `customer` to `admin`
 - a mass assignment test may create or modify an object
 - authorization tests may modify application state
+- support workflow tests may assign or close demo support tickets
 
 Reset the demo environment with:
 
@@ -600,6 +609,8 @@ The test suite covers:
 - Login behavior
 - JWT authentication
 - Order endpoints
+- Invoice endpoints
+- Support ticket endpoints
 - User endpoints
 - Admin endpoints
 - BOLA scanner module

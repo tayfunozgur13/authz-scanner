@@ -2,7 +2,7 @@ from fastapi import FastAPI
 
 from apps.hardened_api import models
 from apps.hardened_api.database import SessionLocal, engine
-from apps.hardened_api.routes import admin, auth, invoices, orders, users
+from apps.hardened_api.routes import admin, auth, invoices, orders, support, users
 from apps.hardened_api.seed import seed_database
 
 
@@ -24,6 +24,7 @@ initialize_database()
 app.include_router(auth.router)
 app.include_router(orders.router)
 app.include_router(invoices.router)
+app.include_router(support.router)
 app.include_router(users.router)
 app.include_router(admin.router)
 

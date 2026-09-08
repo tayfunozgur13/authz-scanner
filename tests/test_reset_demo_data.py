@@ -29,7 +29,7 @@ def test_reset_demo_databases_restores_vulnerable_seed_data() -> None:
         order = db.get(Order, USER_A_ORDER_ID)
 
         assert user is not None
-        assert user.role == UserRole.USER
+        assert user.role == UserRole.CUSTOMER
         assert order is not None
         assert order.owner_id == USER_A_ID
 

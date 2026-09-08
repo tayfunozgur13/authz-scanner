@@ -158,6 +158,54 @@ def test_run_property_auth_tests_returns_no_finding_when_sensitive_fields_are_ab
     assert findings == []
 
 
+def test_run_property_auth_tests_resolves_resource_id_for_excessive_data_exposure() -> None:
+    test_config = PropertyAuthTestConfig(
+        name="resource_detail_must_not_expose_sensitive_fields",
+        type="excessive_data_exposure",
+        role="user",
+        request=PropertyRequestConfig(method="GET", path_template="/resources/{id}"),
+        resource=PropertyResourceConfig(
+            list_method="GET",
+            list_path="/resources",
+            id_field="id",
+            owner_field="owner_id",
+        ),
+        forbidden_fields=["internal_notes"],
+    )
+    seen_paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_paths.append(request.url.path)
+        if request.method == "GET" and request.url.path == "/me":
+            return httpx.Response(200, json={"subject_id": "regular-subject"})
+        if request.method == "GET" and request.url.path == "/resources":
+            return httpx.Response(
+                200,
+                json=[
+                    {"id": "other-resource", "owner_id": "other-subject"},
+                    {"id": "resource-1", "owner_id": "regular-subject"},
+                ],
+            )
+        if request.method == "GET" and request.url.path == "/resources/resource-1":
+            return httpx.Response(200, json={"id": "resource-1", "internal_notes": "secret"})
+        return httpx.Response(404, json={})
+
+    executor = HttpExecutor(
+        httpx.Client(transport=httpx.MockTransport(handler), base_url="http://testserver")
+    )
+
+    findings = run_property_auth_tests(
+        executor=executor,
+        config=build_config([test_config]),
+        identities=build_identities(),
+    )
+
+    assert "/resources/resource-1" in seen_paths
+    assert len(findings) == 1
+    assert findings[0].vulnerability_class == "Excessive Data Exposure"
+    assert findings[0].endpoint == "/resources/{id}"
+
+
 def test_run_property_auth_tests_tries_multiple_mass_assignment_payloads() -> None:
     test_config = PropertyAuthTestConfig(
         name="resource_create_must_not_accept_server_controlled_fields",

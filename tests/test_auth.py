@@ -35,7 +35,7 @@ def test_vulnerable_api_login_and_me_exposes_password_hash() -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["email"] == "userA@example.com"
-    assert body["role"] == "user"
+    assert body["role"] == "customer"
     assert "password_hash" in body
 
 
@@ -48,7 +48,7 @@ def test_hardened_api_login_and_me_hides_password_hash() -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["email"] == "userA@example.com"
-    assert body["role"] == "user"
+    assert body["role"] == "customer"
     assert "password_hash" not in body
 
 

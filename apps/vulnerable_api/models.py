@@ -10,6 +10,9 @@ from apps.vulnerable_api.database import Base
 
 
 class UserRole(str, enum.Enum):
+    CUSTOMER = "customer"
+    SUPPORT = "support"
+    MANAGER = "manager"
     USER = "user"
     ADMIN = "admin"
 
@@ -47,7 +50,11 @@ class User(Base):
     )
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.USER, nullable=False)
+    role: Mapped[UserRole] = mapped_column(
+        Enum(UserRole),
+        default=UserRole.CUSTOMER,
+        nullable=False,
+    )
 
     orders: Mapped[list["Order"]] = relationship(
         back_populates="owner",
@@ -119,3 +126,32 @@ class Invoice(Base):
 
     organization: Mapped[Organization] = relationship(back_populates="invoices")
     owner: Mapped[User] = relationship()
+
+
+class SupportTicket(Base):
+    __tablename__ = "support_tickets"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+    )
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id"),
+        index=True,
+        nullable=False,
+    )
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    assigned_support_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id"),
+        index=True,
+        nullable=True,
+    )
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    subject: Mapped[str] = mapped_column(String(255), nullable=False)
+    message: Mapped[str] = mapped_column(String(1000), nullable=False)
+    internal_notes: Mapped[str] = mapped_column(String(1000), nullable=False)
+
+    organization: Mapped[Organization] = relationship()
+    owner: Mapped[User] = relationship(foreign_keys=[owner_id])
+    assigned_support: Mapped[User | None] = relationship(foreign_keys=[assigned_support_id])

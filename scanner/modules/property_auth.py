@@ -167,10 +167,18 @@ def run_excessive_data_exposure_test(
     test_config: PropertyAuthTestConfig,
 ) -> list[Finding]:
     identity = select_identity_by_role(identities, test_config.role)
+    subject_id = get_identity_subject_id(executor, identity, config)
+    resource = select_property_resource(
+        executor=executor,
+        identity=identity,
+        config=config,
+        test_config=test_config,
+    )
+    request_path = build_property_request_path(test_config, subject_id, resource)
     result = executor.request(
         identity=identity,
         method=test_config.request.method,
-        path=test_config.request.path_template,
+        path=request_path,
     )
     if result.response_json is None:
         return []

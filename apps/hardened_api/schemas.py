@@ -54,6 +54,22 @@ class InvoicePublic(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class SupportTicketPublic(BaseModel):
+    id: str
+    organization_id: str
+    owner_id: str
+    assigned_support_id: str | None
+    status: str
+    subject: str
+    message: str
+
+    model_config = {"from_attributes": True}
+
+
+class SupportTicketActionResponse(SupportTicketPublic):
+    internal_notes: str
+
+
 class OrderItemCreate(BaseModel):
     product_name: str
     quantity: int

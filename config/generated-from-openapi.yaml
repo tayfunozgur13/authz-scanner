@@ -133,6 +133,23 @@ bola:
     - Generated from OpenAPI path GET /invoices/{invoice_id}.
     - Confirm owner_field and resource.id_field against the real response body.
     - Confirm this resource should be isolated between identities with role user.
+  - name: generated_bola_get_support_tickets_ticket_id
+    role: user
+    owner_field: owner_id
+    resource:
+      list_method: GET
+      list_path: /support/tickets
+      id_field: id
+    attack:
+      method: GET
+      path_template: /support/tickets/{id}
+    expected_status: 403
+    business_impact: TODO_BUSINESS_IMPACT
+    review_required: true
+    review_notes:
+    - Generated from OpenAPI path GET /support/tickets/{ticket_id}.
+    - Confirm owner_field and resource.id_field against the real response body.
+    - Confirm this resource should be isolated between identities with role user.
 bfla:
   tests:
   - name: generated_bfla_post_orders_order_id_refund

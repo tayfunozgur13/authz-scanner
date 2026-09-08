@@ -291,6 +291,27 @@ property_auth:
 
 Scanner response body icinde yasakli alan adlarini recursive olarak arar. Alan bulunursa finding uretir; raporda degerler `[REDACTED]` olarak maskelenir.
 
+Kaynak id gerektiren detail endpointleri icin `resource` tanimlanabilir. Bu durumda scanner once ilgili role ait identity ile liste endpointini cagirir, sahip olunan objeyi bulur ve `{id}` placeholder'ini o obje id'siyle doldurur.
+
+```yaml
+property_auth:
+  tests:
+    - name: resource_detail_must_not_expose_internal_fields
+      type: excessive_data_exposure
+      role: user
+      resource:
+        list_method: GET
+        list_path: /resources
+        id_field: id
+        owner_field: owner_id
+      request:
+        method: GET
+        path_template: /resources/{id}
+      forbidden_fields:
+        - internal_notes
+      business_impact: Internal notes may expose sensitive operational context to ordinary users.
+```
+
 ### Mass Assignment
 
 ```yaml
