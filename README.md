@@ -716,6 +716,12 @@ auth:
   cookie_name: "session_id"
 ```
 
+The demo APIs also include cookie-auth scanner configs:
+
+```bash
+python -m scanner.main --compare-config config/vulnerable_cookie.yaml config/hardened_cookie.yaml
+```
+
 For APIs that issue refresh tokens, configure the refresh endpoint:
 
 ```yaml

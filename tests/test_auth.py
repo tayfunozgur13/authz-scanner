@@ -62,6 +62,49 @@ def test_access_token_contains_only_identity_and_expiration_claims() -> None:
     assert isinstance(payload["sub"], str)
 
 
+def test_hardened_api_session_login_sets_cookie_and_allows_me() -> None:
+    client = TestClient(hardened_app)
+
+    response = client.post(
+        "/auth/session",
+        json={
+            "email": "userA@example.com",
+            "password": SEED_PASSWORD,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"detail": "Session created"}
+    assert response.cookies.get("session_id")
+
+    client.cookies.set("session_id", response.cookies["session_id"])
+    me_response = client.get("/users/me")
+
+    assert me_response.status_code == 200
+    assert me_response.json()["email"] == "userA@example.com"
+
+
+def test_vulnerable_api_session_login_sets_cookie_and_allows_me() -> None:
+    client = TestClient(vulnerable_app)
+
+    response = client.post(
+        "/auth/session",
+        json={
+            "email": "userA@example.com",
+            "password": SEED_PASSWORD,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.cookies.get("session_id")
+
+    client.cookies.set("session_id", response.cookies["session_id"])
+    me_response = client.get("/users/me")
+
+    assert me_response.status_code == 200
+    assert me_response.json()["email"] == "userA@example.com"
+
+
 def test_login_rejects_wrong_password() -> None:
     response = TestClient(hardened_app).post(
         "/auth/login",

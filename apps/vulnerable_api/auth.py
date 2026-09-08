@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Cookie, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -16,7 +16,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 password_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 def get_password_hash(password: str) -> str:
@@ -46,7 +46,8 @@ def create_access_token(user: User) -> str:
 
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    bearer_token: str | None = Depends(oauth2_scheme),
+    session_id: str | None = Cookie(default=None),
     db: Session = Depends(get_db),
 ) -> User:
     credentials_error = HTTPException(
@@ -54,6 +55,10 @@ def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    token = bearer_token or session_id
+    if token is None:
+        raise credentials_error
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")

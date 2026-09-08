@@ -1,6 +1,20 @@
 from scanner.core.config import ScannerConfig, load_config
 
 
+def test_demo_cookie_configs_load_successfully() -> None:
+    vulnerable_config = load_config("config/vulnerable_cookie.yaml")
+    hardened_config = load_config("config/hardened_cookie.yaml")
+
+    assert vulnerable_config.target.name == "vulnerable-cookie"
+    assert hardened_config.target.name == "hardened-cookie"
+    assert vulnerable_config.auth.login_path == "/auth/session"
+    assert hardened_config.auth.login_path == "/auth/session"
+    assert vulnerable_config.auth.credential_location == "cookie"
+    assert hardened_config.auth.credential_location == "cookie"
+    assert vulnerable_config.auth.cookie_name == "session_id"
+    assert hardened_config.auth.cookie_name == "session_id"
+
+
 def test_loads_scanner_config_from_yaml(tmp_path) -> None:
     config_path = tmp_path / "scanner.yaml"
     config_path.write_text(

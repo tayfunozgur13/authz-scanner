@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from apps.hardened_api.auth import authenticate_user, create_access_token
@@ -19,3 +19,25 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
         )
 
     return TokenResponse(access_token=create_access_token(user))
+
+
+@router.post("/session")
+def session_login(
+    payload: LoginRequest,
+    response: Response,
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    user = authenticate_user(db, payload.email, payload.password)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+
+    response.set_cookie(
+        key="session_id",
+        value=create_access_token(user),
+        httponly=True,
+        samesite="lax",
+    )
+    return {"detail": "Session created"}
