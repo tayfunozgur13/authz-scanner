@@ -263,6 +263,12 @@ property_auth:
     review_notes:
     - Generated from request body schema for PUT /orders/{order_id}.
     - Confirm payload shape includes required non-risk fields before running the scanner.
+    - Resource lookup was inferred for resolving the {id} placeholder.
+    resource:
+      list_method: GET
+      list_path: /orders
+      id_field: id
+      owner_field: owner_id
   - name: generated_privilege_escalation_put_users_user_id
     type: privilege_escalation
     role: user

@@ -68,8 +68,73 @@ def find_forbidden_effects(data: Any, forbidden_effects: dict[str, Any]) -> dict
     return observed_effects
 
 
-def build_subject_path(path_template: str, subject_id: str) -> str:
-    return path_template.format(subject_id=subject_id)
+def select_property_resource(
+    executor: HttpExecutor,
+    identity: AuthenticatedIdentity,
+    config: ScannerConfig,
+    test_config: PropertyAuthTestConfig,
+) -> dict[str, Any]:
+    if test_config.resource is None:
+        return {}
+    if test_config.resource.list_method.upper() != "GET":
+        raise PropertyAuthScanError(
+            f"Property resource lookup for test '{test_config.name}' requires a GET list endpoint"
+        )
+
+    subject_id = get_identity_subject_id(executor, identity, config)
+    list_result = executor.request(
+        identity=identity,
+        method=test_config.resource.list_method,
+        path=test_config.resource.list_path,
+    )
+    if list_result.response_json is None or not isinstance(list_result.response_json, list):
+        raise PropertyAuthScanError(
+            f"Resource list response for property test '{test_config.name}' is not a JSON list"
+        )
+
+    for resource in list_result.response_json:
+        if not isinstance(resource, dict):
+            continue
+        if test_config.resource.owner_field is not None and resource.get(test_config.resource.owner_field) != subject_id:
+            continue
+        resource_id = resource.get(test_config.resource.id_field)
+        if isinstance(resource_id, str) and resource_id:
+            return resource
+
+    raise PropertyAuthScanError(
+        f"No resource found for property test '{test_config.name}' using id field "
+        f"'{test_config.resource.id_field}'"
+    )
+
+
+def build_property_request_path(
+    test_config: PropertyAuthTestConfig,
+    subject_id: str,
+    resource: dict[str, Any],
+) -> str:
+    path_values: dict[str, Any] = {"subject_id": subject_id}
+    if test_config.resource is not None:
+        resource_id = resource.get(test_config.resource.id_field)
+        if not isinstance(resource_id, str) or not resource_id:
+            raise PropertyAuthScanError(
+                f"Resource id field '{test_config.resource.id_field}' could not be resolved "
+                f"for property test '{test_config.name}'"
+            )
+        path_values["id"] = resource_id
+
+    return test_config.request.path_template.format(**path_values)
+
+
+def build_property_verification_path(
+    path_template: str,
+    subject_id: str,
+    resource: dict[str, Any],
+    test_config: PropertyAuthTestConfig,
+) -> str:
+    path_values: dict[str, Any] = {"subject_id": subject_id}
+    if test_config.resource is not None:
+        path_values["id"] = resource[test_config.resource.id_field]
+    return path_template.format(**path_values)
 
 
 def build_property_finding(
@@ -143,7 +208,13 @@ def run_payload_effect_test(
     payload: PropertyPayloadConfig,
 ) -> list[Finding]:
     subject_id = get_identity_subject_id(executor, identity, config)
-    request_path = build_subject_path(test_config.request.path_template, subject_id)
+    resource = select_property_resource(
+        executor=executor,
+        identity=identity,
+        config=config,
+        test_config=test_config,
+    )
+    request_path = build_property_request_path(test_config, subject_id, resource)
     request_result = executor.request(
         identity=identity,
         method=test_config.request.method,
@@ -153,7 +224,12 @@ def run_payload_effect_test(
 
     verification_result = request_result
     if payload.verification is not None:
-        verification_path = build_subject_path(payload.verification.path_template, subject_id)
+        verification_path = build_property_verification_path(
+            payload.verification.path_template,
+            subject_id,
+            resource,
+            test_config,
+        )
         verification_result = executor.request(
             identity=identity,
             method=payload.verification.method,

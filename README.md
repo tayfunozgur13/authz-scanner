@@ -298,6 +298,26 @@ hardened: 0 findings
 
 The exact number of findings depends on the current scanner configuration and demo implementation.
 
+### Validate Scanner Config
+
+Run the config doctor before a scan to catch missing identities, unresolved path placeholders, review flags, unreachable auth/profile endpoints, and resource list shape problems:
+
+```bash
+python -m scanner.main config doctor --config config/vulnerable.yaml
+```
+
+For static-only validation without connecting to the target API:
+
+```bash
+python -m scanner.main config doctor --config config/vulnerable.yaml --offline
+```
+
+The legacy flag form is also supported:
+
+```bash
+python -m scanner.main --config config/vulnerable.yaml --doctor
+```
+
 ---
 
 ## OpenAPI Starter Config Generation

@@ -90,6 +90,13 @@ class PropertyRequestConfig(BaseModel):
     json_body: dict[str, Any] | None = None
 
 
+class PropertyResourceConfig(BaseModel):
+    list_method: str
+    list_path: str
+    id_field: str
+    owner_field: str | None = None
+
+
 class PropertyPayloadConfig(BaseModel):
     name: str
     json_body: dict[str, Any]
@@ -105,6 +112,7 @@ class PropertyAuthTestConfig(BaseModel):
     type: str
     role: str
     request: PropertyRequestConfig
+    resource: PropertyResourceConfig | None = None
     forbidden_fields: list[str] = Field(default_factory=list)
     payloads: list[PropertyPayloadConfig] = Field(default_factory=list)
     business_impact: str | None = None

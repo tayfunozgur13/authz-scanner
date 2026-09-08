@@ -417,6 +417,17 @@ def generate_property_tests(paths: dict[str, Any], components: dict[str, Any], p
                     "Confirm payload shape includes required non-risk fields before running the scanner.",
                 ],
             }
+            collection_path = find_collection_path(paths, path)
+            if test_type == "mass_assignment" and extract_path_params(path) and collection_path is not None:
+                test["resource"] = {
+                    "list_method": "GET",
+                    "list_path": collection_path,
+                    "id_field": "id",
+                    "owner_field": "owner_id",
+                }
+                test["review_notes"].append(
+                    "Resource lookup was inferred for resolving the {id} placeholder."
+                )
             if test_type == "privilege_escalation" and profile_path != "TODO_PROFILE_PATH":
                 for payload in test["payloads"]:
                     payload["verification"] = {

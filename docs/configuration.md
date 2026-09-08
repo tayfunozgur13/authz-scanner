@@ -211,6 +211,32 @@ Scanner payload icindeki server-controlled alanlari gonderir. Response veya veri
 
 Mass assignment testlerinde `business_impact` test seviyesinde veya payload seviyesinde verilebilir. Payload seviyesindeki impact daha spesifiktir ve raporda onu kullanir.
 
+Kaynak id gerektiren update endpointleri icin `resource` tanimlanabilir:
+
+```yaml
+property_auth:
+  tests:
+    - name: update_resource_must_not_accept_server_controlled_fields
+      type: mass_assignment
+      role: user
+      resource:
+        list_method: GET
+        list_path: /resources
+        id_field: id
+        owner_field: owner_id
+      request:
+        method: PUT
+        path_template: /resources/{id}
+      payloads:
+        - name: force_approved_state
+          json_body:
+            state: approved
+          forbidden_effects:
+            state: approved
+```
+
+Bu durumda scanner once `resource.list_path` endpointinden test kimligine ait bir kaynak secer, sonra `{id}` alanini bu kaynagin `id_field` degeriyle doldurur.
+
 ### Privilege Escalation
 
 ```yaml
@@ -246,6 +272,32 @@ property_auth:
 6. Property authorization icin hassas response alanlarini ve server-controlled payload alanlarini tanimla.
 7. Her kritik test veya payload icin endpoint'e ozel business impact metni yaz.
 8. Scanner'i once tek hedefe, sonra varsa hardened/staging hedefe karsi calistir.
+
+## Config Doctor
+
+Scan baslatmadan once config dosyasini dogrulamak icin:
+
+```bash
+python -m scanner.main config doctor --config config/vulnerable.yaml
+```
+
+Bu komut YAML yapisini, zorunlu alanlari, identity-role eslesmelerini,
+path placeholder'larini, `review_required` isaretlerini, auth/profile
+ayarlarini ve BOLA/BFLA resource list endpointlerinin temel response seklini
+kontrol eder. Attack endpointleri cagrilmaz; doctor komutu mutation yapan
+testleri calistirmadan once guvenli bir on kontrol saglar.
+
+Sadece statik config kontrolu yapmak icin:
+
+```bash
+python -m scanner.main config doctor --config config/vulnerable.yaml --offline
+```
+
+Eski flag bicimi de desteklenir:
+
+```bash
+python -m scanner.main --config config/vulnerable.yaml --doctor
+```
 
 ## OpenAPI'den Starter Config Uretme
 

@@ -9,6 +9,7 @@ from scanner.core.config import (
     IdentityConfig,
     ProfileConfig,
     PropertyAuthConfig,
+    PropertyResourceConfig,
     PropertyAuthTestConfig,
     PropertyPayloadConfig,
     PropertyRequestConfig,
@@ -202,6 +203,61 @@ def test_run_property_auth_tests_tries_multiple_mass_assignment_payloads() -> No
     assert len(findings) == 2
     assert {finding.vulnerability_class for finding in findings} == {"Mass Assignment"}
     assert findings[0].business_impact == "A user may bypass approval workflows."
+
+
+def test_run_property_auth_tests_resolves_resource_id_for_mass_assignment() -> None:
+    test_config = PropertyAuthTestConfig(
+        name="resource_update_must_not_accept_server_controlled_fields",
+        type="mass_assignment",
+        role="user",
+        request=PropertyRequestConfig(method="PUT", path_template="/resources/{id}"),
+        resource=PropertyResourceConfig(
+            list_method="GET",
+            list_path="/resources",
+            id_field="id",
+            owner_field="owner_id",
+        ),
+        payloads=[
+            PropertyPayloadConfig(
+                name="force_approved_state",
+                json_body={"state": "approved"},
+                forbidden_effects={"state": "approved"},
+            ),
+        ],
+    )
+    seen_paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_paths.append(request.url.path)
+        if request.method == "GET" and request.url.path == "/me":
+            return httpx.Response(200, json={"subject_id": "regular-subject"})
+        if request.method == "GET" and request.url.path == "/resources":
+            return httpx.Response(
+                200,
+                json=[
+                    {"id": "other-resource", "owner_id": "other-subject"},
+                    {"id": "resource-1", "owner_id": "regular-subject"},
+                ],
+            )
+        if request.method == "PUT" and request.url.path == "/resources/resource-1":
+            assert json.loads(request.content.decode()) == {"state": "approved"}
+            return httpx.Response(200, json={"id": "resource-1", "state": "approved"})
+        return httpx.Response(404, json={})
+
+    executor = HttpExecutor(
+        httpx.Client(transport=httpx.MockTransport(handler), base_url="http://testserver")
+    )
+
+    findings = run_property_auth_tests(
+        executor=executor,
+        config=build_config([test_config]),
+        identities=build_identities(),
+    )
+
+    assert "/resources/resource-1" in seen_paths
+    assert len(findings) == 1
+    assert findings[0].vulnerability_class == "Mass Assignment"
+    assert findings[0].endpoint == "/resources/{id}"
 
 
 def test_run_property_auth_tests_verifies_privilege_escalation_after_payload() -> None:

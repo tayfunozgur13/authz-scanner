@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.table import Table
 
 from scanner.core.config import ScannerConfig, load_config
+from scanner.core.config_doctor import DoctorResult, run_config_doctor
 from scanner.core.executor import HttpExecutor
 from scanner.core.finding import Finding
 from scanner.core.identity import AuthenticatedIdentity, IdentityLoginError, login_all_identities
@@ -201,7 +202,49 @@ def print_comparison_result(results: list[ScannerRunResult]) -> None:
     console.print(table)
 
 
+def print_doctor_result(result: DoctorResult) -> None:
+    console = Console()
+    table = Table(title=f"Config Doctor: {result.config_name}")
+    table.add_column("Check")
+    table.add_column("Status")
+    table.add_column("Detail")
+    table.add_column("Suggestion")
+
+    for check in result.checks:
+        table.add_row(
+            check.name,
+            check.status,
+            check.detail,
+            check.suggestion or "",
+        )
+
+    console.print(table)
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    argv = sys.argv[1:] if argv is None else argv
+    if len(argv) >= 2 and argv[:2] == ["config", "doctor"]:
+        parser = argparse.ArgumentParser(description="Validate scanner YAML config before running a scan.")
+        parser.add_argument("command", nargs="?")
+        parser.add_argument("subcommand", nargs="?")
+        parser.add_argument(
+            "--config",
+            type=Path,
+            required=True,
+            help="Path to scanner YAML config.",
+        )
+        parser.add_argument(
+            "--offline",
+            action="store_true",
+            help="Run static config validation only.",
+        )
+        args = parser.parse_args(argv)
+        args.doctor = True
+        args.compare_config = None
+        args.report_format = "none"
+        args.report_dir = Path("reports")
+        return args
+
     parser = argparse.ArgumentParser(description="AuthZ Scanner")
     target_group = parser.add_mutually_exclusive_group(required=True)
     target_group.add_argument(
@@ -228,6 +271,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=Path("reports"),
         help="Directory for generated report files.",
     )
+    parser.add_argument(
+        "--doctor",
+        action="store_true",
+        help="Validate scanner config before running a scan.",
+    )
+    parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="With --doctor, run static config validation only.",
+    )
     return parser.parse_args(argv)
 
 
@@ -248,10 +301,16 @@ def run_cli(argv: list[str] | None = None) -> int:
         args = parse_args(argv)
         if args.config is not None:
             config = load_scanner_config(args.config)
+            if args.doctor:
+                doctor_result = run_config_doctor(config, live=not args.offline)
+                print_doctor_result(doctor_result)
+                return 1 if doctor_result.has_failures else 0
             result = run_scan(config)
             print_scan_result(result)
             results = [result]
         else:
+            if args.doctor:
+                raise ScannerCliError("--doctor can only be used with --config")
             results = [
                 run_scan(load_scanner_config(config_path))
                 for config_path in args.compare_config

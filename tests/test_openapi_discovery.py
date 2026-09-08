@@ -37,7 +37,16 @@ def build_openapi() -> dict[str, object]:
             },
             "/orders/{order_id}": {
                 "get": {"operationId": "read_order"},
-                "put": {"operationId": "update_order"},
+                "put": {
+                    "operationId": "update_order",
+                    "requestBody": {
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/OrderCreate"}
+                            }
+                        }
+                    },
+                },
                 "delete": {"operationId": "delete_order"},
             },
             "/orders/{order_id}/items": {
@@ -133,6 +142,17 @@ def test_generate_config_creates_reviewable_starter_config_from_openapi() -> Non
     assert any(test["type"] == "excessive_data_exposure" for test in property_tests)
     assert any(test["type"] == "mass_assignment" for test in property_tests)
     assert any(test["type"] == "privilege_escalation" for test in property_tests)
+    assert any(
+        test["type"] == "mass_assignment"
+        and test["request"]["path_template"] == "/orders/{id}"
+        and test["resource"] == {
+            "list_method": "GET",
+            "list_path": "/orders",
+            "id_field": "id",
+            "owner_field": "owner_id",
+        }
+        for test in property_tests
+    )
     assert any(
         test["type"] == "privilege_escalation"
         and test["request"]["path_template"] == "/users/{subject_id}"
