@@ -44,6 +44,7 @@ def get_owasp_api_category(vulnerability_class: str) -> str:
         "Excessive Data Exposure": "API3: Broken Object Property Level Authorization",
         "Mass Assignment": "API3: Broken Object Property Level Authorization",
         "Privilege Escalation": "API5: Broken Function Level Authorization",
+        "Unauthenticated Access": "API2: Broken Authentication",
     }
     return categories.get(vulnerability_class, "Unmapped")
 
@@ -69,6 +70,10 @@ def get_impact_statement(vulnerability_class: str) -> str:
         "Privilege Escalation": (
             "A low-privilege user may alter privilege-related properties and gain elevated "
             "access."
+        ),
+        "Unauthenticated Access": (
+            "An anonymous attacker may reach protected data or functions without presenting "
+            "valid credentials."
         ),
     }
     return impacts.get(vulnerability_class, "The behavior may weaken authorization guarantees.")

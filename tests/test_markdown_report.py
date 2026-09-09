@@ -123,12 +123,14 @@ def test_get_owasp_api_category_maps_known_authorization_classes() -> None:
     assert get_owasp_api_category("Mass Assignment") == (
         "API3: Broken Object Property Level Authorization"
     )
+    assert get_owasp_api_category("Unauthenticated Access") == "API2: Broken Authentication"
     assert get_owasp_api_category("Unknown") == "Unmapped"
 
 
 def test_get_impact_statement_returns_pentest_style_impact() -> None:
     assert "another user" in get_impact_statement("BOLA")
     assert "server-controlled properties" in get_impact_statement("Mass Assignment")
+    assert "anonymous attacker" in get_impact_statement("Unauthenticated Access")
 
 
 def test_build_reproduction_steps_summarizes_observed_request() -> None:
