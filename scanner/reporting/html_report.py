@@ -32,6 +32,15 @@ def format_json_html(value: Any) -> str:
     return f"<pre><code>{escape_html(rendered)}</code></pre>"
 
 
+def build_evidence_summary(finding_index: int, evidence_index: int, evidence: Any) -> str:
+    observed = evidence.observed
+    return (
+        f"Evidence {finding_index}.{evidence_index}: "
+        f"{escape_html(observed.method)} {escape_html(observed.path)} "
+        f"returned {observed.status_code}, expected {evidence.expected_status_code}"
+    )
+
+
 def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
     timestamp = generated_at or datetime.now(UTC)
     class_counts = count_findings_by_class(result)
@@ -92,6 +101,8 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
             observed = evidence.observed
             evidence_items.append(
                 "<li>"
+                "<details class=\"evidence-details\">"
+                f"<summary>{build_evidence_summary(finding_index, evidence_index, evidence)}</summary>"
                 f"<p>{escape_html(evidence.description)}</p>"
                 "<dl>"
                 f"<dt>Expected Status</dt><dd>{evidence.expected_status_code}</dd>"
@@ -101,14 +112,15 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
                 "</dl>"
                 "<h5>cURL Reproduction</h5>"
                 f"<pre><code>{escape_html(build_curl_command(result, evidence))}</code></pre>"
+                "</details>"
                 "</li>"
             )
             response_body = observed.response_json
             if response_body is None:
                 response_body = observed.response_text
             appendix_sections.append(
-                "<section class=\"appendix-entry\">"
-                f"<h3>Appendix {finding_index}.{evidence_index}</h3>"
+                "<details class=\"appendix-entry\">"
+                f"<summary>Appendix {finding_index}.{evidence_index}: {escape_html(finding.title)}</summary>"
                 f"<p><strong>Finding:</strong> {escape_html(finding.title)}</p>"
                 f"<p><strong>Observed Request:</strong> <code>{escape_html(observed.method)} {escape_html(observed.path)}</code></p>"
                 f"<p><strong>Expected Status:</strong> {evidence.expected_status_code}</p>"
@@ -119,7 +131,7 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
                 f"<pre><code>{escape_html(build_curl_command(result, evidence))}</code></pre>"
                 "<h4>Response Body</h4>"
                 f"{format_json_html(response_body)}"
-                "</section>"
+                "</details>"
             )
 
         finding_sections.append(
@@ -228,6 +240,31 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
       color: inherit;
       padding: 0;
     }}
+    details {{
+      border: 1px solid var(--soft-line);
+      background: #f9fafb;
+      padding: 0;
+      margin-top: 12px;
+    }}
+    summary {{
+      cursor: pointer;
+      font-weight: 700;
+      padding: 12px 14px;
+    }}
+    details[open] {{
+      background: var(--surface);
+    }}
+    details > p,
+    details > dl,
+    details > h4,
+    details > h5,
+    details > pre {{
+      margin-left: 14px;
+      margin-right: 14px;
+    }}
+    details > pre:last-child {{
+      margin-bottom: 14px;
+    }}
     section {{
       background: var(--surface);
       border: 1px solid var(--soft-line);
@@ -322,6 +359,7 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
     }}
     .appendix-entry {{
       border-left: 5px solid var(--accent);
+      padding-bottom: 14px;
     }}
     @media (max-width: 760px) {{
       main {{

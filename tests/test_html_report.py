@@ -94,6 +94,9 @@ def test_build_html_report_includes_summary_findings_and_redacted_evidence() -> 
     assert "Another customer&#x27;s data may be exposed." in report
     assert "GET /resources/1" in report
     assert "cURL Reproduction" in report
+    assert "<details class=\"evidence-details\">" in report
+    assert "<summary>Evidence 1.1: GET /resources/1 returned 200, expected 403</summary>" in report
+    assert "<details class=\"appendix-entry\">" in report
     assert "Authorization: Bearer &lt;regular_token&gt;" in report
     assert "Appendix 1.1" in report
     assert "&quot;password&quot;: &quot;[REDACTED]&quot;" in report
