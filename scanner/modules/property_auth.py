@@ -1,6 +1,12 @@
+import json
 from typing import Any
 
-from scanner.core.config import PropertyAuthTestConfig, PropertyPayloadConfig, ScannerConfig
+from scanner.core.config import (
+    PropertyAuthTestConfig,
+    PropertyPayloadConfig,
+    ResponseMatcherConfig,
+    ScannerConfig,
+)
 from scanner.core.evidence import HttpEvidence
 from scanner.core.executor import HttpExecutor
 from scanner.core.finding import Finding, VulnerabilityClass
@@ -25,6 +31,10 @@ DEFAULT_MASS_ASSIGNMENT_BUSINESS_IMPACT = (
 DEFAULT_PRIVILEGE_ESCALATION_BUSINESS_IMPACT = (
     "A low-privilege user may gain elevated access, exposing administrative functions and "
     "sensitive data across the application."
+)
+DEFAULT_RESPONSE_BODY_MISMATCH_BUSINESS_IMPACT = (
+    "The API may return response data that violates the configured security contract, "
+    "which can hide authorization bypasses or expose data clients should not receive."
 )
 
 
@@ -67,6 +77,45 @@ def find_forbidden_effects(data: Any, forbidden_effects: dict[str, Any]) -> dict
         if str(observed_value) == str(forbidden_value):
             observed_effects[field_path] = observed_value
     return observed_effects
+
+
+def response_body_as_text(data: Any, response_text: str | None = None) -> str:
+    if data is not None:
+        return json.dumps(data, sort_keys=True)
+    return response_text or ""
+
+
+def evaluate_response_matchers(
+    data: Any,
+    response_text: str | None,
+    matchers: ResponseMatcherConfig,
+) -> list[str]:
+    body_text = response_body_as_text(data, response_text)
+    violations: list[str] = []
+
+    for expected_text in matchers.body_should_contain:
+        if expected_text not in body_text:
+            violations.append(f"body did not contain '{expected_text}'")
+
+    for forbidden_text in matchers.body_should_not_contain:
+        if forbidden_text in body_text:
+            violations.append(f"body contained forbidden text '{forbidden_text}'")
+
+    for field_path, expected_value in matchers.field_should_equal.items():
+        observed_value = get_value_by_path(data, field_path)
+        if str(observed_value) != str(expected_value):
+            violations.append(
+                f"field '{field_path}' was '{observed_value}', expected '{expected_value}'"
+            )
+
+    for field_path, forbidden_value in matchers.field_should_not_equal.items():
+        observed_value = get_value_by_path(data, field_path)
+        if str(observed_value) == str(forbidden_value):
+            violations.append(
+                f"field '{field_path}' matched forbidden value '{forbidden_value}'"
+            )
+
+    return violations
 
 
 def select_property_resource(
@@ -227,6 +276,63 @@ def run_excessive_data_exposure_test(
     ]
 
 
+def run_response_body_matcher_test(
+    executor: HttpExecutor,
+    config: ScannerConfig,
+    identities: dict[str, AuthenticatedIdentity],
+    test_config: PropertyAuthTestConfig,
+) -> list[Finding]:
+    identity = select_identity_by_role(identities, test_config.role)
+    subject_id = get_identity_subject_id(executor, identity, config)
+    resource = select_property_resource(
+        executor=executor,
+        identity=identity,
+        config=config,
+        test_config=test_config,
+    )
+    request_path = build_property_request_path(test_config, subject_id, resource)
+    result = executor.request(
+        identity=identity,
+        method=test_config.request.method,
+        path=request_path,
+        json=test_config.request.json_body,
+    )
+    violations = evaluate_response_matchers(
+        result.response_json,
+        result.response_text,
+        test_config.response_matchers,
+    )
+    if not violations:
+        return []
+
+    evidence = HttpEvidence(
+        observed=result,
+        expected_status_code=result.status_code,
+        description=f"Response matcher violations: {', '.join(violations)}",
+    )
+    return [
+        build_property_finding(
+            test_config=test_config,
+            identity=identity,
+            evidence=evidence,
+            vulnerability_class=VulnerabilityClass.RESPONSE_BODY_MISMATCH,
+            description="The API response body did not satisfy the configured response matchers.",
+            business_impact=(
+                test_config.business_impact
+                or DEFAULT_RESPONSE_BODY_MISMATCH_BUSINESS_IMPACT
+            ),
+            recommendation=(
+                "Use explicit response DTOs, response allowlists, and field-level authorization "
+                "checks so returned data matches the security contract."
+            ),
+            severity_override=test_config.severity,
+            risk_score_override=test_config.risk_score,
+            destructive=test_config.destructive,
+            reset_recommended=test_config.reset_recommended,
+        )
+    ]
+
+
 def run_payload_effect_test(
     executor: HttpExecutor,
     config: ScannerConfig,
@@ -326,6 +432,14 @@ def run_property_auth_test(
 ) -> list[Finding]:
     if test_config.type == "excessive_data_exposure":
         return run_excessive_data_exposure_test(
+            executor=executor,
+            config=config,
+            identities=identities,
+            test_config=test_config,
+        )
+
+    if test_config.type == "response_body_matcher":
+        return run_response_body_matcher_test(
             executor=executor,
             config=config,
             identities=identities,

@@ -343,6 +343,26 @@ property_auth:
     - internal_notes
     business_impact: Exposed internal support notes may reveal investigation context,
       fraud suspicion, or sensitive operational metadata to customers.
+  - name: support_ticket_response_must_match_customer_contract
+    type: response_body_matcher
+    role: customer
+    severity: high
+    risk_score: 78
+    resource:
+      list_method: GET
+      list_path: /support/tickets
+      id_field: id
+      owner_field: owner_id
+    request:
+      method: GET
+      path_template: /support/tickets/{id}
+    response_matchers:
+      body_should_not_contain:
+      - internal_notes
+      field_should_not_equal:
+        status: internal_only
+    business_impact: Customer-facing ticket responses that include internal fields
+      may reveal support investigation details and operational metadata.
   - name: users_cannot_promote_themselves_by_role_assignment
     type: privilege_escalation
     role: customer

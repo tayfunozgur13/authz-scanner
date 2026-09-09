@@ -71,6 +71,11 @@ def infer_default_severity(
             return Severity.HIGH
         return Severity.MEDIUM
 
+    if vulnerability_class == VulnerabilityClass.RESPONSE_BODY_MISMATCH:
+        if any(keyword in normalized_endpoint for keyword in ("admin", "users", "invoice", "billing", "support")):
+            return Severity.HIGH
+        return Severity.MEDIUM
+
     return Severity.MEDIUM
 
 

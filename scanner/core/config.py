@@ -132,6 +132,13 @@ class PropertyResourceConfig(BaseModel):
     owner_field: str | None = None
 
 
+class ResponseMatcherConfig(BaseModel):
+    body_should_contain: list[str] = Field(default_factory=list)
+    body_should_not_contain: list[str] = Field(default_factory=list)
+    field_should_equal: dict[str, Any] = Field(default_factory=dict)
+    field_should_not_equal: dict[str, Any] = Field(default_factory=dict)
+
+
 class PropertyPayloadConfig(BaseModel):
     name: str
     json_body: dict[str, Any]
@@ -153,6 +160,7 @@ class PropertyAuthTestConfig(BaseModel):
     request: PropertyRequestConfig
     resource: PropertyResourceConfig | None = None
     forbidden_fields: list[str] = Field(default_factory=list)
+    response_matchers: ResponseMatcherConfig = Field(default_factory=ResponseMatcherConfig)
     payloads: list[PropertyPayloadConfig] = Field(default_factory=list)
     severity: Severity | None = None
     risk_score: int | None = Field(default=None, ge=0, le=100)

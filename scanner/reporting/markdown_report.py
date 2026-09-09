@@ -45,6 +45,7 @@ def get_owasp_api_category(vulnerability_class: str) -> str:
         "Mass Assignment": "API3: Broken Object Property Level Authorization",
         "Privilege Escalation": "API5: Broken Function Level Authorization",
         "Unauthenticated Access": "API2: Broken Authentication",
+        "Response Body Mismatch": "API3: Broken Object Property Level Authorization",
     }
     return categories.get(vulnerability_class, "Unmapped")
 
@@ -74,6 +75,9 @@ def get_impact_statement(vulnerability_class: str) -> str:
         "Unauthenticated Access": (
             "An anonymous attacker may reach protected data or functions without presenting "
             "valid credentials."
+        ),
+        "Response Body Mismatch": (
+            "The API response does not match the configured security response policy."
         ),
     }
     return impacts.get(vulnerability_class, "The behavior may weaken authorization guarantees.")

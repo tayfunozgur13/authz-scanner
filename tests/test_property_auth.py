@@ -13,12 +13,14 @@ from scanner.core.config import (
     PropertyAuthTestConfig,
     PropertyPayloadConfig,
     PropertyRequestConfig,
+    ResponseMatcherConfig,
     ScannerConfig,
     TargetConfig,
 )
 from scanner.core.executor import HttpExecutor
 from scanner.core.identity import AuthenticatedIdentity
 from scanner.modules.property_auth import (
+    evaluate_response_matchers,
     find_forbidden_effects,
     find_forbidden_fields,
     run_property_auth_tests,
@@ -92,6 +94,31 @@ def test_find_forbidden_effects_compares_nested_values() -> None:
     }
 
 
+def test_evaluate_response_matchers_reports_body_and_field_violations() -> None:
+    violations = evaluate_response_matchers(
+        {
+            "id": "ticket-1",
+            "status": "closed",
+            "internal_notes": "fraud review",
+            "owner": {"role": "customer"},
+        },
+        None,
+        ResponseMatcherConfig(
+            body_should_contain=["ticket-1", "missing-required-marker"],
+            body_should_not_contain=["internal_notes"],
+            field_should_equal={"status": "open"},
+            field_should_not_equal={"owner.role": "customer"},
+        ),
+    )
+
+    assert violations == [
+        "body did not contain 'missing-required-marker'",
+        "body contained forbidden text 'internal_notes'",
+        "field 'status' was 'closed', expected 'open'",
+        "field 'owner.role' matched forbidden value 'customer'",
+    ]
+
+
 def test_run_property_auth_tests_reports_excessive_data_exposure() -> None:
     test_config = PropertyAuthTestConfig(
         name="profile_must_not_expose_sensitive_fields",
@@ -129,6 +156,62 @@ def test_run_property_auth_tests_reports_excessive_data_exposure() -> None:
     assert findings[0].identity_name == "regular"
     assert findings[0].business_impact == "Sensitive credential metadata may leak to clients."
     assert "credentials.password_hash" in findings[0].evidence[0].description
+
+
+def test_run_property_auth_tests_reports_response_body_mismatch() -> None:
+    test_config = PropertyAuthTestConfig(
+        name="ticket_detail_response_must_match_customer_contract",
+        type="response_body_matcher",
+        role="user",
+        request=PropertyRequestConfig(method="GET", path_template="/tickets/{id}"),
+        resource=PropertyResourceConfig(
+            list_method="GET",
+            list_path="/tickets",
+            id_field="id",
+            owner_field="owner_id",
+        ),
+        response_matchers=ResponseMatcherConfig(
+            body_should_not_contain=["internal_notes"],
+            field_should_equal={"status": "open"},
+        ),
+        business_impact="Customer ticket responses may expose internal support context.",
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET" and request.url.path == "/me":
+            return httpx.Response(200, json={"subject_id": "regular-subject"})
+        if request.method == "GET" and request.url.path == "/tickets":
+            return httpx.Response(
+                200,
+                json=[{"id": "ticket-1", "owner_id": "regular-subject"}],
+            )
+        if request.method == "GET" and request.url.path == "/tickets/ticket-1":
+            return httpx.Response(
+                200,
+                json={
+                    "id": "ticket-1",
+                    "status": "closed",
+                    "internal_notes": "fraud review",
+                },
+            )
+        return httpx.Response(404, json={})
+
+    executor = HttpExecutor(
+        httpx.Client(transport=httpx.MockTransport(handler), base_url="http://testserver")
+    )
+
+    findings = run_property_auth_tests(
+        executor=executor,
+        config=build_config([test_config]),
+        identities=build_identities(),
+    )
+
+    assert len(findings) == 1
+    assert findings[0].vulnerability_class == "Response Body Mismatch"
+    assert findings[0].endpoint == "/tickets/{id}"
+    assert findings[0].business_impact == "Customer ticket responses may expose internal support context."
+    assert "body contained forbidden text 'internal_notes'" in findings[0].evidence[0].description
+    assert "field 'status' was 'closed', expected 'open'" in findings[0].evidence[0].description
 
 
 def test_run_property_auth_tests_returns_no_finding_when_sensitive_fields_are_absent() -> None:

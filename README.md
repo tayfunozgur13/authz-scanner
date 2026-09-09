@@ -543,6 +543,50 @@ Payload-level overrides are also supported for property authorization tests, whi
 
 ---
 
+## Response Body Matchers
+
+Some API security issues are not visible from the HTTP status code alone. An endpoint may return `200 OK`, but still expose fields or values that should not be present in a customer-facing response.
+
+Response body matchers let a property authorization test define a response contract:
+
+```yaml
+property_auth:
+  tests:
+    - name: support_ticket_response_must_match_customer_contract
+      type: response_body_matcher
+      role: customer
+      request:
+        method: GET
+        path_template: /support/tickets/{id}
+      resource:
+        list_method: GET
+        list_path: /support/tickets
+        id_field: id
+        owner_field: owner_id
+      response_matchers:
+        body_should_contain:
+          - id
+        body_should_not_contain:
+          - internal_notes
+        field_should_equal:
+          status: open
+        field_should_not_equal:
+          role: admin
+```
+
+Supported matcher types:
+
+- `body_should_contain`
+- `body_should_not_contain`
+- `field_should_equal`
+- `field_should_not_equal`
+
+When a matcher fails, the scanner creates a `Response Body Mismatch` finding with evidence, business impact, risk score, and cURL reproduction.
+
+This is useful when testing response filtering, field-level authorization, partial data exposure, and API contracts that cannot be verified with status codes alone.
+
+---
+
 ## Destructive Test Guard
 
 Some authorization checks are safe read-only probes. Others intentionally try to change target state.
@@ -712,6 +756,7 @@ The test suite covers:
 - BOLA scanner module
 - BFLA scanner module
 - Property authorization scanner
+- Response body matcher scanner
 - JSON reporting
 - Markdown reporting
 - HTML reporting
@@ -754,6 +799,7 @@ Testing another REST API primarily requires a new configuration file containing 
 - BOLA rules
 - BFLA rules
 - property authorization rules
+- response body matcher rules
 - business impact statements for important tests or payloads
 
 OpenAPI starter generation can create the first draft of this file, but final authorization decisions still need human review.

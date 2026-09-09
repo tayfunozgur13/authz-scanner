@@ -301,7 +301,12 @@ def _check_bfla_tests(config: ScannerConfig, result: DoctorResult) -> None:
 
 
 def _check_property_auth_tests(config: ScannerConfig, result: DoctorResult) -> None:
-    supported_types = {"excessive_data_exposure", "mass_assignment", "privilege_escalation"}
+    supported_types = {
+        "excessive_data_exposure",
+        "mass_assignment",
+        "privilege_escalation",
+        "response_body_matcher",
+    }
     for test in config.property_auth.tests:
         if test.type in supported_types:
             _add(result, f"Property '{test.name}' type", "pass", test.type)
@@ -346,6 +351,22 @@ def _check_property_auth_tests(config: ScannerConfig, result: DoctorResult) -> N
                 "No forbidden_fields are configured.",
                 "Add sensitive field names such as password_hash, token, api_key, or private_key.",
             )
+
+        if test.type == "response_body_matcher":
+            matcher_count = (
+                len(test.response_matchers.body_should_contain)
+                + len(test.response_matchers.body_should_not_contain)
+                + len(test.response_matchers.field_should_equal)
+                + len(test.response_matchers.field_should_not_equal)
+            )
+            if matcher_count == 0:
+                _add(
+                    result,
+                    f"Property '{test.name}' response matchers",
+                    "fail",
+                    "No response matchers are configured.",
+                    "Add body_should_contain, body_should_not_contain, field_should_equal, or field_should_not_equal.",
+                )
 
         if test.type in {"mass_assignment", "privilege_escalation"} and not test.payloads:
             _add(

@@ -112,6 +112,21 @@ property_auth:
       forbidden_fields:
         - password_hash
         - api_key
+    - name: profile_response_must_match_public_contract
+      type: response_body_matcher
+      role: user
+      request:
+        method: GET
+        path_template: /me
+      response_matchers:
+        body_should_contain:
+          - subject_id
+        body_should_not_contain:
+          - password_hash
+        field_should_equal:
+          role: user
+        field_should_not_equal:
+          role: admin
     - name: create_resource_must_not_accept_server_controlled_fields
       type: mass_assignment
       role: user
@@ -181,14 +196,20 @@ unauthenticated:
     direct_bfla_test = config.bfla.tests[1]
     assert direct_bfla_test.resource is None
     assert direct_bfla_test.attack.path_template == "/admin/users"
-    assert len(config.property_auth.tests) == 2
+    assert len(config.property_auth.tests) == 3
     exposure_test = config.property_auth.tests[0]
     assert exposure_test.type == "excessive_data_exposure"
     assert exposure_test.severity == "medium"
     assert exposure_test.risk_score == 45
     assert exposure_test.request.path_template == "/me"
     assert exposure_test.forbidden_fields == ["password_hash", "api_key"]
-    mass_assignment_test = config.property_auth.tests[1]
+    matcher_test = config.property_auth.tests[1]
+    assert matcher_test.type == "response_body_matcher"
+    assert matcher_test.response_matchers.body_should_contain == ["subject_id"]
+    assert matcher_test.response_matchers.body_should_not_contain == ["password_hash"]
+    assert matcher_test.response_matchers.field_should_equal == {"role": "user"}
+    assert matcher_test.response_matchers.field_should_not_equal == {"role": "admin"}
+    mass_assignment_test = config.property_auth.tests[2]
     assert mass_assignment_test.type == "mass_assignment"
     assert mass_assignment_test.payloads[0].name == "force_admin_only_state"
     assert mass_assignment_test.payloads[0].severity == "critical"

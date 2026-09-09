@@ -12,6 +12,7 @@ class VulnerabilityClass(str, enum.Enum):
     EXCESSIVE_DATA_EXPOSURE = "Excessive Data Exposure"
     PRIVILEGE_ESCALATION = "Privilege Escalation"
     UNAUTHENTICATED_ACCESS = "Unauthenticated Access"
+    RESPONSE_BODY_MISMATCH = "Response Body Mismatch"
 
 
 class Severity(str, enum.Enum):
