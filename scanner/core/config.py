@@ -167,6 +167,29 @@ class PropertyAuthConfig(BaseModel):
     tests: list[PropertyAuthTestConfig]
 
 
+class UnauthenticatedRequestConfig(BaseModel):
+    method: str
+    path_template: str
+    json_body: dict[str, Any] | None = None
+
+
+class UnauthenticatedTestConfig(BaseModel):
+    name: str
+    request: UnauthenticatedRequestConfig
+    expected_status: int = 401
+    severity: Severity | None = None
+    risk_score: int | None = Field(default=None, ge=0, le=100)
+    business_impact: str | None = None
+    destructive: bool = False
+    reset_recommended: bool = False
+    review_required: bool = False
+    review_notes: list[str] = Field(default_factory=list)
+
+
+class UnauthenticatedConfig(BaseModel):
+    tests: list[UnauthenticatedTestConfig] = Field(default_factory=list)
+
+
 class ScannerConfig(BaseModel):
     target: TargetConfig
     auth: AuthConfig
@@ -175,6 +198,7 @@ class ScannerConfig(BaseModel):
     bola: BolaConfig
     bfla: BflaConfig
     property_auth: PropertyAuthConfig
+    unauthenticated: UnauthenticatedConfig = Field(default_factory=UnauthenticatedConfig)
 
 
 def load_config(path: str | Path) -> ScannerConfig:

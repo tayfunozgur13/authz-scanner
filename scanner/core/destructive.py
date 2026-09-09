@@ -7,6 +7,7 @@ from scanner.core.config import (
     PropertyAuthTestConfig,
     PropertyPayloadConfig,
     ScannerConfig,
+    UnauthenticatedConfig,
 )
 
 
@@ -93,11 +94,27 @@ def filter_destructive_tests(
 
         property_tests.append(test.model_copy(update={"payloads": payloads}))
 
+    unauthenticated_tests = []
+    for test in config.unauthenticated.tests:
+        if test.destructive:
+            skipped_tests.append(
+                SkippedTest(
+                    module="unauthenticated",
+                    name=test.name,
+                    reason=DESTRUCTIVE_SKIP_REASON,
+                    destructive=True,
+                    reset_recommended=test.reset_recommended,
+                )
+            )
+            continue
+        unauthenticated_tests.append(test)
+
     filtered_config = config.model_copy(
         update={
             "bola": BolaConfig(tests=bola_tests),
             "bfla": BflaConfig(tests=bfla_tests),
             "property_auth": PropertyAuthConfig(tests=property_tests),
+            "unauthenticated": UnauthenticatedConfig(tests=unauthenticated_tests),
         }
     )
     return filtered_config, skipped_tests

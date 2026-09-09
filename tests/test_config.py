@@ -126,6 +126,16 @@ property_auth:
             state: approved
           forbidden_effects:
             state: approved
+
+unauthenticated:
+  tests:
+    - name: anonymous_users_cannot_read_profile
+      request:
+        method: GET
+        path_template: /me
+      expected_status: 401
+      severity: high
+      risk_score: 80
 """,
     )
 
@@ -184,6 +194,14 @@ property_auth:
     assert mass_assignment_test.payloads[0].severity == "critical"
     assert mass_assignment_test.payloads[0].risk_score == 96
     assert mass_assignment_test.payloads[0].forbidden_effects == {"state": "approved"}
+    assert len(config.unauthenticated.tests) == 1
+    unauthenticated_test = config.unauthenticated.tests[0]
+    assert unauthenticated_test.name == "anonymous_users_cannot_read_profile"
+    assert unauthenticated_test.request.method == "GET"
+    assert unauthenticated_test.request.path_template == "/me"
+    assert unauthenticated_test.expected_status == 401
+    assert unauthenticated_test.severity == "high"
+    assert unauthenticated_test.risk_score == 80
 
 
 def test_loads_empty_yaml_as_invalid_config(tmp_path) -> None:

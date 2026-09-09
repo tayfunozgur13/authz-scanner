@@ -27,6 +27,7 @@ AuthZ Scanner currently evaluates the following vulnerability classes:
 - **Excessive Data Exposure**
 - **Mass Assignment**
 - **Privilege Escalation**
+- **Unauthenticated Access**
 
 These behaviors are intentionally implemented in two different demo environments:
 

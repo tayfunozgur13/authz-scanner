@@ -364,3 +364,23 @@ property_auth:
         restricted user or order management functions.
       destructive: true
       reset_recommended: true
+unauthenticated:
+  tests:
+  - name: anonymous_users_cannot_read_profile
+    request:
+      method: GET
+      path_template: /users/me
+    expected_status: 401
+    severity: high
+    risk_score: 80
+    business_impact: Anonymous profile access may expose account data without any
+      valid user session.
+  - name: anonymous_users_cannot_list_admin_users
+    request:
+      method: GET
+      path_template: /admin/users
+    expected_status: 401
+    severity: critical
+    risk_score: 92
+    business_impact: Anonymous access to administrative user inventory may expose
+      account metadata and expand the attack surface before login.

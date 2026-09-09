@@ -17,6 +17,7 @@ from scanner.core.identity import AuthenticatedIdentity, IdentityLoginError, log
 from scanner.modules.bfla import run_bfla_tests
 from scanner.modules.bola import run_bola_tests
 from scanner.modules.property_auth import run_property_auth_tests
+from scanner.modules.unauthenticated import run_unauthenticated_tests
 from scanner.reporting.html_report import write_html_report
 from scanner.reporting.json_report import write_json_report
 from scanner.reporting.manifest import update_report_manifest
@@ -82,6 +83,12 @@ def run_scan(config: ScannerConfig, include_destructive: bool = False) -> Scanne
                 identities=identities,
             )
         )
+        findings.extend(
+            run_unauthenticated_tests(
+                executor=executor,
+                config=scan_config,
+            )
+        )
 
     openapi_title = None
     if openapi_response.status_code == 200:
@@ -127,7 +134,11 @@ def print_scan_result(result: ScannerRunResult) -> None:
         "ok" if result.openapi_ok else "failed",
         result.openapi_title or str(result.openapi_status_code),
     )
-    table.add_row("Findings", str(result.finding_count), "BOLA, BFLA, and property checks completed")
+    table.add_row(
+        "Findings",
+        str(result.finding_count),
+        "BOLA, BFLA, property, and unauthenticated checks completed",
+    )
     table.add_row(
         "Skipped",
         str(len(result.skipped_tests)),

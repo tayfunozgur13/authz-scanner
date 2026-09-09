@@ -64,6 +64,13 @@ def infer_default_severity(
             return Severity.CRITICAL
         return Severity.HIGH
 
+    if vulnerability_class == VulnerabilityClass.UNAUTHENTICATED_ACCESS:
+        if normalized_method in {"DELETE", "PUT", "PATCH", "POST"}:
+            return Severity.CRITICAL
+        if any(keyword in normalized_endpoint for keyword in ("admin", "users", "invoice", "billing")):
+            return Severity.HIGH
+        return Severity.MEDIUM
+
     return Severity.MEDIUM
 
 

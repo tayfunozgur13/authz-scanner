@@ -99,6 +99,7 @@ def _check_static_config(config: ScannerConfig, result: DoctorResult) -> None:
     _check_bola_tests(config, result)
     _check_bfla_tests(config, result)
     _check_property_auth_tests(config, result)
+    _check_unauthenticated_tests(config, result)
     _check_placeholders(config, result)
 
 
@@ -386,6 +387,48 @@ def _check_property_auth_tests(config: ScannerConfig, result: DoctorResult) -> N
 
         if test.review_required:
             _add(result, f"Property '{test.name}' review", "warn", "Marked review_required.", "Review and clear this flag after validating the test manually.")
+
+
+def _check_unauthenticated_tests(config: ScannerConfig, result: DoctorResult) -> None:
+    for test in config.unauthenticated.tests:
+        _check_method(result, f"Unauthenticated '{test.name}' request method", test.request.method)
+        _check_path(result, f"Unauthenticated '{test.name}' request path", test.request.path_template)
+        if 100 <= test.expected_status <= 599:
+            status = "pass" if test.expected_status in {401, 403} else "warn"
+            suggestion = None
+            if status == "warn":
+                suggestion = "Unauthenticated-denial tests usually expect 401 or 403."
+            _add(
+                result,
+                f"Unauthenticated '{test.name}' expected status",
+                status,
+                str(test.expected_status),
+                suggestion,
+            )
+        else:
+            _add(
+                result,
+                f"Unauthenticated '{test.name}' expected status",
+                "fail",
+                f"Invalid HTTP status code: {test.expected_status}",
+                "Use a status code between 100 and 599.",
+            )
+        _check_template_placeholders(
+            result,
+            f"Unauthenticated '{test.name}' request placeholders",
+            test.request.path_template,
+            set(),
+        )
+        if test.request.method.upper() in {"POST", "PUT", "PATCH"} and test.request.json_body is None:
+            _add(
+                result,
+                f"Unauthenticated '{test.name}' request body",
+                "warn",
+                "Mutating request has no json_body.",
+                "Add json_body when the target endpoint requires a request payload.",
+            )
+        if test.review_required:
+            _add(result, f"Unauthenticated '{test.name}' review", "warn", "Marked review_required.", "Review and clear this flag after validating the test manually.")
 
 
 def _identity_count_for_role(config: ScannerConfig, role: str) -> int:
