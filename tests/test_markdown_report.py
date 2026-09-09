@@ -173,6 +173,8 @@ def test_build_markdown_report_includes_summary_findings_and_evidence() -> None:
     assert "- Expected Status: `403`" in report
     assert "- Observed Status: `200`" in report
     assert "- Full Evidence: `Appendix 1.1`" in report
+    assert "cURL Reproduction:" in report
+    assert "Authorization: Bearer <regular_token>" in report
     assert "#### Remediation" in report
     assert "## Evidence Appendix" in report
     assert "### Appendix 1.1" in report

@@ -4,6 +4,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from scanner.reporting.curl import build_curl_command
+
 
 SENSITIVE_REPORT_FIELDS = {
     "access_token",
@@ -103,6 +105,7 @@ def build_json_report(result: Any, generated_at: datetime | None = None) -> dict
                     {
                         "description": evidence.description,
                         "expected_status_code": evidence.expected_status_code,
+                        "curl": build_curl_command(result, evidence),
                         "observed": {
                             "identity_name": evidence.observed.identity_name,
                             "method": evidence.observed.method,

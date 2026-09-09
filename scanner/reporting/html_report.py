@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from scanner.reporting.curl import build_curl_command
 from scanner.reporting.json_report import redact_sensitive_values, sanitize_filename_part
 from scanner.reporting.markdown_report import (
     build_reproduction_steps,
@@ -98,6 +99,8 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
                 f"<dt>Observed Request</dt><dd><code>{escape_html(observed.method)} {escape_html(observed.path)}</code></dd>"
                 f"<dt>Full Evidence</dt><dd>Appendix {finding_index}.{evidence_index}</dd>"
                 "</dl>"
+                "<h5>cURL Reproduction</h5>"
+                f"<pre><code>{escape_html(build_curl_command(result, evidence))}</code></pre>"
                 "</li>"
             )
             response_body = observed.response_json
@@ -112,6 +115,8 @@ def build_html_report(result: Any, generated_at: datetime | None = None) -> str:
                 f"<p><strong>Observed Status:</strong> {observed.status_code}</p>"
                 "<h4>Request Body</h4>"
                 f"{format_json_html(observed.request_json)}"
+                "<h4>cURL Reproduction</h4>"
+                f"<pre><code>{escape_html(build_curl_command(result, evidence))}</code></pre>"
                 "<h4>Response Body</h4>"
                 f"{format_json_html(response_body)}"
                 "</section>"

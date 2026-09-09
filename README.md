@@ -473,6 +473,7 @@ The Markdown and HTML reports include:
 - Findings Summary
 - Detailed Findings
 - Evidence Appendix
+- cURL reproduction commands
 
 Each finding can contain:
 
@@ -484,11 +485,20 @@ Each finding can contain:
 - Impact
 - Business impact
 - Steps to reproduce
+- cURL reproduction
 - Evidence summary
 - Remediation guidance
 
 Business impact can be defined in scanner configuration for each test or payload.
 This keeps the scanner reusable across APIs while allowing the report to explain the real business risk of each endpoint.
+
+cURL reproduction commands use placeholder authentication values such as:
+
+```text
+Authorization: Bearer <userA_token>
+```
+
+Request bodies are redacted before being written into cURL examples, so sensitive fields such as passwords and tokens are not leaked into generated reports.
 
 ---
 

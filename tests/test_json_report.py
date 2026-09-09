@@ -131,6 +131,12 @@ def test_build_json_report_serializes_scan_result_without_tokens() -> None:
     assert report["findings"][0]["destructive"] is False
     assert report["findings"][0]["business_impact"] == "Another customer's data may be exposed."
     assert report["findings"][0]["evidence"][0]["expected_status_code"] == 403
+    assert report["findings"][0]["evidence"][0]["curl"] == (
+        "curl -i -X GET http://testserver/resources/1 "
+        "-H 'Authorization: Bearer <regular_token>' "
+        "-H 'Content-Type: application/json' --data "
+        """'{"password":"[REDACTED]"}'"""
+    )
     assert report["findings"][0]["evidence"][0]["observed"]["request_json"] == {
         "password": "[REDACTED]"
     }

@@ -93,6 +93,8 @@ def test_build_html_report_includes_summary_findings_and_redacted_evidence() -> 
     assert "Business Impact" in report
     assert "Another customer&#x27;s data may be exposed." in report
     assert "GET /resources/1" in report
+    assert "cURL Reproduction" in report
+    assert "Authorization: Bearer &lt;regular_token&gt;" in report
     assert "Appendix 1.1" in report
     assert "&quot;password&quot;: &quot;[REDACTED]&quot;" in report
     assert "&quot;password_hash&quot;: &quot;[REDACTED]&quot;" in report

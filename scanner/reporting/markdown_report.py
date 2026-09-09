@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from scanner.reporting.curl import build_curl_command
 from scanner.reporting.json_report import redact_sensitive_values, sanitize_filename_part
 
 
@@ -259,6 +260,12 @@ def build_markdown_report(result: Any, generated_at: datetime | None = None) -> 
                     f"- Observed Request: `{observed.method} {observed.path}`",
                     f"- Full Evidence: `Appendix {index}.{evidence_index}`",
                     "",
+                    "cURL Reproduction:",
+                    "",
+                    "```bash",
+                    build_curl_command(result, evidence),
+                    "```",
+                    "",
                 ]
             )
 
@@ -288,6 +295,12 @@ def build_markdown_report(result: Any, generated_at: datetime | None = None) -> 
                     "Request Body:",
                     "",
                     format_json_block(redact_sensitive_values(observed.request_json)),
+                    "",
+                    "cURL Reproduction:",
+                    "",
+                    "```bash",
+                    build_curl_command(result, evidence),
+                    "```",
                     "",
                     "Response Body:",
                     "",
