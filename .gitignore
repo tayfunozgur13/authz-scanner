@@ -22,3 +22,5 @@ reports/*
 *.db
 .env
 .env.*
+
+presentations/speaker_script.md
